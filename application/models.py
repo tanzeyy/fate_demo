@@ -27,6 +27,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(45), unique=True, nullable=True)
     party_id = Column(Integer, unique=True, nullable=False)
+    info = Column(JSON)
 
     models = relationship('Model',
                          secondary=user_models,
@@ -53,7 +54,7 @@ class Model(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     fate_id = Column(String(500), unique=True)
     fate_version = Column(String(500), unique=False)
-    info = Column(String(500), unique=False)
+    info = Column(JSON)
 
     user = relationship('User',
                          secondary=user_models,
@@ -86,4 +87,5 @@ class InferOrders(Base):
     model_id = Column(String(50), unique=False)
     data_info = Column(JSON)
     fate_id = Column(String(50), unique=True)
+    info = Column(JSON)
 
