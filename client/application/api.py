@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, make_response, request
+from flask import Blueprint, jsonify, make_response
 
 bp = Blueprint('data', __name__, url_prefix='/data')
 
@@ -11,7 +11,7 @@ def read_data():
 
     # 没有查询的sql语句
     if not request.data:
-        return 
+        return
     data = request.get_json()
     sql = data.get('data_sql')
     if not sql:
