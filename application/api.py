@@ -1,0 +1,7 @@
+from flask import Blueprint, jsonify, make_response
+
+bp = Blueprint('api', __name__, url_prefix='/api')
+
+@bp.route('/test', methods=['GET', ])
+def test():
+    return make_response(jsonify(code=200, message='fate demo'), 200)

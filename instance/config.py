@@ -1,0 +1,1 @@
+SQLALCHEMY_DATABASE_URI="mysql+pymysql://april:123456789@192.168.12.107:3306/backend"
