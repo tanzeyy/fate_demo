@@ -3,6 +3,8 @@ from .utils import ok_response, error_response
 from .db import get_db
 import time
 import csv
+import json
+import os
 
 bp = Blueprint('data', __name__, url_prefix='/data')
 
@@ -39,8 +41,14 @@ def read_data():
     head = ['x' + str(i) for i in range(table_head-2)]
 
     file_path = current_app.config['TEMP_DATA_DIR']
+    try:
+        os.makedirs(file_path)
+    except:
+        pass
+
     current_milli_time = lambda: str(round(time.time() * 1000))
-    file_path = file_path + current_milli_time() + '.csv'
+    prefix = current_milli_time()
+    file_path = file_path + prefix + '.csv'
 
     with open(file_path, "w") as csvfile:
         writer = csv.writer(csvfile)
@@ -51,4 +59,17 @@ def read_data():
         # 写入多行用writerows
         writer.writerows(db_data)
 
+    upload_json(file_path, prefix)
+
+    # TODO: 发给fate
     return ok_response(message="ok")
+
+
+def upload_json(file_path, name):
+    UPLOAD_TEMPLATE = current_app.config['UPLOAD_TEMPLATE']
+    with open(UPLOAD_TEMPLATE, 'r', encoding='utf-8') as f:
+        conf_json = json.loads(f.read())
+        conf_json['file'] = file_path
+        conf_json['table_name'] = name
+        conf_json['namespace'] = name
+    print(conf_json)
