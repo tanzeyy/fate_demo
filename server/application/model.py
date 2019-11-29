@@ -33,7 +33,6 @@ def model_train():
         responses[user.party_id] = p.apply_async(submit_data, args=(url, v))
     p.close()
     p.join()
-
     # Generate config file
     
 
