@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, make_response, request, current_app
-from .utils import ok_response, error_response
+from .utils import ok_response, error_response, upload_json
 from .db import get_db
 import time
 import csv
@@ -62,14 +62,8 @@ def read_data():
     upload_json(file_path, prefix)
 
     # TODO: 发给fate
+    
+
+
     return ok_response(message="ok")
 
-
-def upload_json(file_path, name):
-    UPLOAD_TEMPLATE = current_app.config['UPLOAD_TEMPLATE']
-    with open(UPLOAD_TEMPLATE, 'r', encoding='utf-8') as f:
-        conf_json = json.loads(f.read())
-        conf_json['file'] = file_path
-        conf_json['table_name'] = name
-        conf_json['namespace'] = name
-    print(conf_json)
