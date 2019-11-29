@@ -27,13 +27,11 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(45), unique=True, nullable=True)
     party_id = Column(Integer, unique=True, nullable=False)
+    client_url = Column(String(100))
 
     models = relationship('Model',
                          secondary=user_models,
                          back_populates='users')
-
-    jobs = relationship('Job',
-                        back_populates='user')
                   
 
     def __init__(self, name=None, party_id=party_id):
@@ -53,7 +51,7 @@ class Model(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     fate_id = Column(String(500), unique=True)
     fate_version = Column(String(500), unique=False)
-    info = Column(String(500), unique=False)
+    info = Column(JSON)
 
     user = relationship('User',
                          secondary=user_models,
@@ -68,22 +66,14 @@ class Model(Base):
         return "<Model(%r, %r)>" % (self.fate_id, self.fate_version)
 
 
-class TrainOrders(Base):
-    __tablename__ = 'trainOrders'
+class Order(Base):
+    __tablename__ = 'orders'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    model_type = Column(String(50), unique=False)
-    model_params = Column(JSON)
-    party_list = Column(JSON)
-    data_info = Column(JSON)
-    fate_id = Column(String(50), unique=True)
+    type = Column(String(10))
+    order_info = Column(JSON)
+    job_info = Column(JSON)
 
-
-class InferOrders(Base):
-    __tablename__ = 'inferOrders'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    model_id = Column(String(50), unique=False)
-    data_info = Column(JSON)
-    fate_id = Column(String(50), unique=True)
-
+    def __init__(self, order_info, type):
+        self.order_info = order_info
+        self.type = type

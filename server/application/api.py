@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, make_response
-from .utils import ok_response, error_response
+from .libs.utils import ok_response, error_response
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 

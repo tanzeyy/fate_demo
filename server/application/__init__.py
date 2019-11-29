@@ -25,7 +25,7 @@ def create_app(test_config=None):
         pass
 
     with app.app_context():
-        from . import db
+        from .libs import db
         db.init_app(app)
 
     from . import api
