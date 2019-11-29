@@ -1,5 +1,9 @@
-from flask import jsonify, make_response
-
+from flask import jsonify, make_response, current_app
+import subprocess
+import json
+import os
+import time
+import random
 
 def ok_response(message=None, data=None):
     return make_response(jsonify(code=200, message=message, data=data), 200)
@@ -18,7 +22,7 @@ def exec_upload_task(config_dict, role, fate_flow_path):
     config_path = save_config_file(config_dict=config_dict, prefix=prefix)
 
     subp = subprocess.Popen(["python",
-                             FATE_FLOW_PATH,
+                             fate_flow_path,
                              "-f",
                              "upload",
                              "-c",
@@ -138,11 +142,11 @@ def exec_modeling_task(dsl_dict, config_dict, fate_flow_path):
     return stdout
 
 
-def job_status_checker(jobid):
+def job_status_checker(jobid, fate_flow_path):
     # check_counter = 0
     # while True:
     subp = subprocess.Popen(["python",
-                             FATE_FLOW_PATH,
+                             fate_flow_path,
                              "-f",
                              "query_job",
                              "-j",
