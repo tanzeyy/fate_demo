@@ -1,12 +1,12 @@
 from flask import Blueprint, jsonify, make_response, request, current_app
-from .utils import ok_response, error_response, upload_json
+from .utils import ok_response, error_response, upload_json, exec_upload_task, get_timeid, exec_modeling_task
 from .db import get_db
 import time
 import csv
 import json
 import os
 
-bp = Blueprint('data', __name__, url_prefix='/data')
+bp = Blueprint('api', __name__, url_prefix='/api')
 
 @bp.route('/read_data', methods=['POST'])
 def read_data():
@@ -30,7 +30,7 @@ def read_data():
     try:
         db_data = db.execute(r'''{}'''.format(sql)).fetchall()
     except Exception as e:
-        return error_response(message="Query data from databse error. Error info: " + str(e))
+        return error_response(message="Query data from database error. Error info: " + str(e))
 
     if (len(db_data) == 0):
         return error_response(message="没有满足条件的数据")
@@ -40,15 +40,14 @@ def read_data():
         return error_response(message="数据缺少id或者标签")
     head = ['x' + str(i) for i in range(table_head-2)]
 
-    file_path = current_app.config['TEMP_DATA_DIR']
+    tmp_path = current_app.config['TEMP_DATA_DIR']
     try:
-        os.makedirs(file_path)
+        os.makedirs(tmp_path)
     except:
         pass
 
-    current_milli_time = lambda: str(round(time.time() * 1000))
-    prefix = current_milli_time()
-    file_path = file_path + prefix + '.csv'
+    prefix = get_timeid()
+    file_path = os.path.join(tmp_path, prefix + '.csv')
 
     with open(file_path, "w") as csvfile:
         writer = csv.writer(csvfile)
@@ -59,11 +58,39 @@ def read_data():
         # 写入多行用writerows
         writer.writerows(db_data)
 
-    upload_json(file_path, prefix)
+    template = current_app.config['UPLOAD_TEMPLATE']
+    conf_json = upload_json(file_path, prefix, template)
+    fate_flow_path = current_app.config['FATE_FLOW_PATH']
 
-    # TODO: 发给fate
+    stdout = exec_upload_task(conf_json, "", fate_flow_path)    
+
+    return ok_response(data=stdout)
+
+
+@bp.route('/training_task', methods=['POST'])
+def training_task():
+    '''
+    根据config dict执行任务
+    '''
+
+    if not request.data:
+        return error_response(message="None data.")
+    data = request.get_json()
+    config_dict = data.get('config_dict')
+    dsl_dict = data.get('dsl_dict')
+    fate_flow_path = current_app.config['FATE_FLOW_PATH']
+
+    stdout = exec_modeling_task(dsl_dict, config_dict, fate_flow_path)
+
+    return ok_response(data=stdout)
+
+
+@bp.route('/inference_task', methods=['POST'])
+def inference_task():
+    if not request.data:
+        return error_response(message="None data.")
+    data = request.get_json()
+    config_dict = data.get('config_dict')
+    fate_flow_path = current_app.config['FATE_FLOW_PATH']
+
     
-
-
-    return ok_response(message="ok")
-

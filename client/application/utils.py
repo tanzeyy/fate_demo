@@ -4,6 +4,13 @@ import json
 import os
 import time
 import random
+import sys
+import traceback
+
+HOME_DIR = os.path.split(os.path.realpath(__file__))[0]
+SUCCESS = 'success'
+RUNNING = 'running'
+FAIL = 'failed'
 
 def ok_response(message=None, data=None):
     return make_response(jsonify(code=200, message=message, data=data), 200)
@@ -17,8 +24,8 @@ def redirect_response(url=None):
     return make_response(jsonify(code=302, url=url), 200)
 
 
-def exec_upload_task(config_dict, role, fate_flow_path):
-    prefix = '_'.join(['upload', role])
+def exec_upload_task(config_dict, fate_flow_path):
+    prefix = "upload"
     config_path = save_config_file(config_dict=config_dict, prefix=prefix)
 
     subp = subprocess.Popen(["python",
@@ -52,9 +59,8 @@ def save_config_file(config_dict, prefix):
     return config_path
 
 
-def upload_json(file_path, name):
-    UPLOAD_TEMPLATE = current_app.config['UPLOAD_TEMPLATE']
-    with open(UPLOAD_TEMPLATE, 'r', encoding='utf-8') as f:
+def upload_json(file_path, name, template):
+    with open(template, 'r', encoding='utf-8') as f:
         conf_json = json.loads(f.read())
         conf_json['file'] = file_path
         conf_json['table_name'] = name
@@ -132,9 +138,6 @@ def exec_modeling_task(dsl_dict, config_dict, fate_flow_path):
     stdout = stdout.decode("utf-8")
     print("stdout:" + str(stdout))
     stdout = json.loads(stdout)
-    with open(LATEST_TRAINED_RESULT, 'w') as outfile:
-        json.dump(stdout, outfile)
-
     status = stdout["retcode"]
     if status != 0:
         raise ValueError(
