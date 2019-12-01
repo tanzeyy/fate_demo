@@ -1,8 +1,7 @@
-import requests
 from multiprocessing import Pool
 
 from flask import Blueprint, jsonify, make_response, request, current_app
-from .libs.utils import ok_response, error_response
+from .libs.utils import ok_response, error_response, submit_data, submit_train_task
 from .libs.db import get_db
 from .libs.models import User, Model, Order
 import json
@@ -18,45 +17,47 @@ def model_train():
     model_type = data.get('model_type')
     model_param = data.get('model_params')
     party_id = data.get('party_id')
-    data_info = data.get('input_data')
+    data_info = data.get('data_info')
 
     db = get_db()
-
-    # Submit data
-    def submit_data(url, data):
-        requests.post(url, json=data)
+    initiator = db.query(User).filter(User.id == user_id).first()
+    hosts = [db.query(User).filter(User.id == uid).first() for uid in party_id]
 
     responses = {}
     p = Pool(len(data_info))
     for k, v in data_info.items():
         user = db.query(User).filter(User.id==k).first()
-        url = user.client_url
-        responses[user.party_id] = p.apply_async(submit_data, args=(url, v))
+        url = user.client_url + "/api/read_data"
+        responses[user.party_id] = p.apply_async(submit_data, args=(url, v, ))
     p.close()
     p.join()
 
-    initiator = db.query(User).filter(User.id == user_id).first()
-
     # Generate config file
-    TRAIN_TEMPLATE = current_app.config['TRAIN_TEMPLATE']
-    with open(TRAIN_TEMPLATE, 'r', encoding='utf-8') as f:
-        conf_json = json.loads(f.read())
+    with open(current_app.config['TRAIN_TEMPLATE'], 'r', encoding='utf-8') as f:
+        conf_dict = json.loads(f.read())
 
-        conf_json['initiator']['party_id'] = initiator.party_id
-        conf_json['initiator']['role'] = 'guest'
+        conf_dict['initiator']['party_id'] = initiator.party_id
+        conf_dict['initiator']['role'] = 'guest'
 
-        conf_json['role']['guest'] = []
-        conf_json['role']['host'] = []
-        conf_json['role']['arbiter'] = []
+        conf_dict['role']['guest'] = [initiator.party_id]
+        conf_dict['role']['host'] = [host.party_id for host in hosts]
+        conf_dict['role']['arbiter'] = [initiator.party_id]
 
-        conf_json['role_parameters']['guest']['args']['data']['train_data'] = []
-        conf_json['role_parameters']['host']['args']['data']['train_data'] = []
+        # DO NOT CHANGE
+        conf_dict['role_parameters']['guest']['args']['data']['train_data'] = [{'namespace': json.loads(responses[uid].get().text)['data']['data']['namespace'], 'name': json.loads(responses[uid].get().text)['data']['data']['table_name']} for uid in conf_dict['role']['guest']]
+        conf_dict['role_parameters']['host']['args']['data']['train_data'] = [{'namespace': json.loads(responses[uid].get().text)['data']['data']['namespace'], 'name': json.loads(responses[uid].get().text)['data']['data']['table_name']} for uid in conf_dict['role']['host']]
 
-        conf_json['algorithm_parameters']['homo_lr_0'] = model_param
+        conf_dict['algorithm_parameters']['homo_lr_0'] = model_param
 
-    # post json
-    # TODO: 加API
-    requests.post(initiator.client_url, json=data)
+    # Read DSL file
+    with open(current_app.config['LR_DSL_TEMPLATE'], 'r', encoding='utf-8') as f:
+        dsl_dict = json.loads(f.read())
+
+    # print(conf_dict, dsl_dict)
+
+    response = submit_train_task(initiator.client_url+'/api/training_task', conf_dict, dsl_dict)
+    print(response.text)
+    return ok_response()
 
 
-    return make_response(jsonify(code=200, message='fate demo'), 200)
+    # return make_response(jsonify(code=200, message='fate demo'), 200)

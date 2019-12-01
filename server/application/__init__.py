@@ -28,8 +28,8 @@ def create_app(test_config=None):
         from .libs import db
         db.init_app(app)
 
-    from . import api
-    app.register_blueprint(api.bp)
+    from . import model
+    app.register_blueprint(model.bp)
 
     # from . import metadata
     # app.register_blueprint(metadata.bp)

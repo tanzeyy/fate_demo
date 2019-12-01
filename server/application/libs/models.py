@@ -39,7 +39,7 @@ class User(Base):
         self.party_id = party_id
 
     def __repr__(self):
-        return '<User %r>' % (self.name)
+        return '<User %r>' % (self.id)
 
     def get_id(self):
         return self.user_id
@@ -53,7 +53,7 @@ class Model(Base):
     fate_version = Column(String(500), unique=False)
     info = Column(JSON)
 
-    user = relationship('User',
+    users = relationship('User',
                          secondary=user_models,
                          back_populates='models')
 

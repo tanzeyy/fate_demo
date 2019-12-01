@@ -1,3 +1,4 @@
+import requests
 from flask import jsonify, make_response
 
 
@@ -11,3 +12,13 @@ def error_response(message=None):
 
 def redirect_response(url=None):
     return make_response(jsonify(code=302, url=url), 200)
+
+
+# Submit data
+def submit_data(url, data_sql):
+    return requests.post(url, json={"data_sql": data_sql})
+
+# Submit train task
+def submit_train_task(url, conf, dsl):
+    return requests.post(url, json={'config_dict': conf, 'dsl_dict': dsl})
+    
