@@ -56,8 +56,17 @@ def model_train():
     # print(conf_dict, dsl_dict)
 
     response = submit_train_task(initiator.client_url+'/api/training_task', conf_dict, dsl_dict)
-    print(response.text)
-    return ok_response()
 
+    model_info = json.loads(response.text)['data']['data']['model_info']
+    model_id = model_info['model_id']
+    model_version = model_info['model_version']
 
-    # return make_response(jsonify(code=200, message='fate demo'), 200)
+    print(model_info)
+
+    model = Model(model_id, model_version, json.dumps(model_param))
+    order = Order(json.dumps(data), "train")
+    db.add(model)
+    db.add(order)
+    db.commit()
+
+    return ok_response(data=model_info)
