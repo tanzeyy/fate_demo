@@ -20,7 +20,6 @@ user_models = Table('user_models', Base.metadata,
                    Column('user_id', ForeignKey('users.id'), primary_key=True),
                    Column('model_id', ForeignKey('models.id'), primary_key=True))
 
-
 class User(Base):
     __tablename__ = 'users'
 
@@ -49,13 +48,16 @@ class Model(Base):
     __tablename__ = 'models'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    fate_id = Column(String(500), unique=True)
+    fate_id = Column(String(500), unique=False)
     fate_version = Column(String(500), unique=False)
     info = Column(JSON)
 
     users = relationship('User',
                          secondary=user_models,
                          back_populates='models')
+
+    orders = relationship("Order", back_populates='model')
+
 
     def __init__(self, fate_id, fate_version, info=None):
         self.fate_id = fate_id
@@ -74,6 +76,10 @@ class Order(Base):
     order_info = Column(JSON)
     job_info = Column(JSON)
 
-    def __init__(self, order_info, type):
+    model_id = Column(Integer, ForeignKey('models.id'))
+    model = relationship("Model", foreign_keys=model_id,  back_populates='orders')
+
+    def __init__(self, type, order_info, job_info):
         self.order_info = order_info
+        self.job_info = job_info
         self.type = type

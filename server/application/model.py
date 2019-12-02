@@ -64,7 +64,9 @@ def model_train():
     print(model_info)
 
     model = Model(model_id, model_version, json.dumps(model_param))
-    order = Order(json.dumps(data), "train")
+    order = Order("train", json.dumps(data), json.dumps(conf_dict))
+    initiator.models.append(model)
+    order.model = model
     db.add(model)
     db.add(order)
     db.commit()
