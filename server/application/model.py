@@ -87,7 +87,7 @@ def train_status():
     if order is None:
         return error_response(message="Error order_id")
 
-
+    model_id = order.model_id
     fate_job_id = order.fate_job_id
     job_info = json.loads(order.order_info)
     user_id = job_info['user_id']
@@ -96,6 +96,6 @@ def train_status():
     response = check_job_status(url, fate_job_id)
 
     status_info = json.loads(response.text)
-    return ok_response(message=status_info['message'], data={'order_id':order_id, 'train_status':status_info['data']})
+    return ok_response(message=status_info['message'], data={'order_id':order_id, 'model_id': model_id, 'train_status':status_info['data']})
 
 
