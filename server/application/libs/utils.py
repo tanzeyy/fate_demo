@@ -22,3 +22,6 @@ def submit_data(url, data_sql):
 def submit_train_task(url, conf, dsl):
     return requests.post(url, json={'config_dict': conf, 'dsl_dict': dsl})
     
+# Request job status
+def check_job_status(url, fate_job_id):
+    return requests.post(url, json={'fate_job_id': fate_job_id})

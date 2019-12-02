@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, make_response, request, current_app
-from .utils import ok_response, error_response, upload_json, exec_upload_task, get_timeid, exec_modeling_task
+from .utils import ok_response, error_response, upload_json, exec_upload_task, get_timeid, exec_modeling_task, job_status_checker
 from .db import get_db
 import time
 import csv
@@ -93,4 +93,15 @@ def inference_task():
     config_dict = data.get('config_dict')
     fate_flow_path = current_app.config['FATE_FLOW_PATH']
 
-    
+
+@bp.route('/status', methods=['POST'])
+def check_status():
+    if not request.data:
+        return error_response(message="None data.")
+
+    data = request.get_json()
+    fate_job_id = data.get('fate_job_id')
+    fate_flow_path = current_app.config['FATE_FLOW_PATH']
+    stdout = job_status_checker(fate_job_id, fate_flow_path)
+
+    return ok_response(data=stdout)

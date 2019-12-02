@@ -73,13 +73,15 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     type = Column(String(10))
+    fate_job_id = Column(String(50))
     order_info = Column(JSON)
     job_info = Column(JSON)
 
     model_id = Column(Integer, ForeignKey('models.id'))
     model = relationship("Model", foreign_keys=model_id,  back_populates='orders')
 
-    def __init__(self, type, order_info, job_info):
+    def __init__(self, fate_job_id, type, order_info, job_info):
+        self.fate_job_id = fate_job_id
         self.order_info = order_info
         self.job_info = job_info
         self.type = type

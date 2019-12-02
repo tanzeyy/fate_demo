@@ -1,7 +1,7 @@
 from multiprocessing import Pool
 
 from flask import Blueprint, jsonify, make_response, request, current_app
-from .libs.utils import ok_response, error_response, submit_data, submit_train_task
+from .libs.utils import ok_response, error_response, submit_data, submit_train_task, check_job_status
 from .libs.db import get_db
 from .libs.models import User, Model, Order
 import json
@@ -64,7 +64,7 @@ def model_train():
     print(model_info)
 
     model = Model(model_id, model_version, json.dumps(model_param))
-    order = Order("train", json.dumps(data), json.dumps(conf_dict))
+    order = Order(model_version, "train", json.dumps(data), json.dumps(conf_dict))
     initiator.models.append(model)
     order.model = model
     db.add(model)
@@ -72,3 +72,30 @@ def model_train():
     db.commit()
 
     return ok_response(data={"model_id": model.id, "order_id": order.id})
+
+
+@bp.route('/train_status', methods=['POST'])
+def train_status():
+    if not request.data:
+        return error_response(message="None data.")
+    data = request.get_json()
+    order_id = data.get('order_id')
+
+    db = get_db()
+    order = db.query(Order).filter(Order.id == order_id).first()
+
+    if order is None:
+        return error_response(message="Error order_id")
+
+
+    fate_job_id = order.fate_job_id
+    job_info = json.loads(order.order_info)
+    user_id = job_info['user_id']
+    user = db.query(User).filter(User.id == user_id).first()
+    url = user.client_url + "/api/status"
+    response = check_job_status(url, fate_job_id)
+
+    status_info = json.loads(response.text)
+    return ok_response(message=status_info['message'], data={'order_id':order_id, 'train_status':status_info['data']})
+
+
