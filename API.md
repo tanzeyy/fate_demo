@@ -71,15 +71,9 @@
 
 - 请求地址：`http://192.168.25.105:5000/model/train_status`
 
-- 请求方式：`POST`
+- 请求方式：`GET`
 
-- 请求参数：
-
-  ```json
-  {
-  	"order_id": "8"
-  }
-  ```
+- 请求参数：`order_id=15`
 
 - 请求成功返回：
 
@@ -87,11 +81,12 @@
   {
       "code": 200,
       "data": {
-          "order_id": "8",
-          "train_status": "success"
+          "model_id": 15,
+          "train_status": "running"
       },
       "message": null
   }
   ```
-
   
+
+
