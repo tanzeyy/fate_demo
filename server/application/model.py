@@ -71,4 +71,4 @@ def model_train():
     db.add(order)
     db.commit()
 
-    return ok_response(data=model_info)
+    return ok_response(data={"model_id": model.id, "order_id": order.id})
