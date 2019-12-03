@@ -20,7 +20,9 @@ def model_train():
     data_info = data.get('data_info')
     attributes = data.get('attributes')
     label_name = data.get('label_name')
+    original_attr = attributes
     attributes.append(label_name)
+    unique_id = data.get('unique_id')
 
     db = get_db()
     initiator = db.query(User).filter(User.id == user_id).first()
@@ -67,7 +69,9 @@ def model_train():
     model_version = model_info['model_version']
 
     print(model_info)
-    model_param['attributes'] = attributes
+    model_param['attributes'] = original_attr
+    model_param['unique_id'] = unique_id
+    model_param['label_name'] = label_name
     model = Model(model_id, model_version, json.dumps(model_param))
     order = Order(model_version, "train", json.dumps(data), json.dumps(conf_dict))
     initiator.models.append(model)
@@ -102,5 +106,22 @@ def train_status():
 
     status_info = json.loads(response.text)
     return ok_response(message=status_info['message'], data={'model_id': model_id, 'train_status':status_info['data']})
+
+
+@bp.route('/infer', method=['POST'])
+def model_infer():
+    if not request.data:
+        return error_response(message="None data.")
+    data = request.get_json()
+    model_id = data.get('model_id')
+    data_sql = data.get('input_data')
+
+    db = get_db()
+
+    model = db.query(Model).filter(Model.id == model_id).first()
+    model_info = json.loads(model)
+    unique_id = model_info['unique_id']
+    attributes = model_info['attributes']
+
 
 

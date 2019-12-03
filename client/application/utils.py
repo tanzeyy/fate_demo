@@ -8,6 +8,7 @@ import sys
 import traceback
 import csv
 import pandas as pd
+import numpy as np
 
 HOME_DIR = os.path.split(os.path.realpath(__file__))[0]
 SUCCESS = 'success'

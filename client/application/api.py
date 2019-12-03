@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, make_response, request, current_app
-from .utils import ok_response, error_response, upload_json, exec_upload_task, get_timeid, exec_modeling_task, job_status_checker, get_model, generate_csv, get_dataframe
+from .utils import ok_response, error_response, upload_json, exec_upload_task, get_timeid, exec_modeling_task, job_status_checker, get_model, generate_csv, get_dataframe, homo_lr_predict
 from .db import get_db, get_db_engine
 import time
 import csv
@@ -118,6 +118,7 @@ def infer_with_model():
     data_sql = data.get('data_sql')
     model_params = data.get('model_params')
     attributes = data.get('attributes')
+    unique_id = data.get('unique_id')
 
     # Get data
     # 没有sql语句
@@ -131,6 +132,9 @@ def infer_with_model():
     if not attributes or type(attributes) is not list:
         return error_response(message="None attributes in request, or attributes is not a array.")
 
+    if not unique_id:
+        return error_response(message="None unique_id in request.")
+
     db_engine = get_db_engine()
     try:
         df = pd.read_sql(data_sql, con=db_engine)
@@ -141,11 +145,9 @@ def infer_with_model():
     if (len(db_data) == 0):
         return error_response(message="没有满足条件的数据")
 
-    tmp_path = current_app.config['TEMP_DATA_DIR']
-
-    _, file_path = generate_csv(db_data=db_data, tmp_path=tmp_path)
-    data_frame = get_dataframe(file_path)
-
     # Predict
+    results = homo_lr_predict(db_data, model_params)
+
+
     # Return result 
     
