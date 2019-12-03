@@ -18,6 +18,12 @@ def get_db():
 
     return g.db
 
+def get_db_engine():
+    if 'db_engine' not in g:
+        g.db_engine = engine
+
+    return g.db_engine
+
 @current_app.teardown_appcontext
 def close_db(e=None):
     db = g.pop('db', None)

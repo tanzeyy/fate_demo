@@ -218,18 +218,7 @@ def generate_csv(db_data, tmp_path):
 
     prefix = get_timeid()
     file_path = os.path.join(tmp_path, prefix + '.csv')
-
-    table_head = len(db_data[0])
-    head = ['x' + str(i) for i in range(table_head - 2)]
-
-    with open(file_path, "w") as csvfile:
-        writer = csv.writer(csvfile)
-        # 先写入columns_name
-        row = ["x", "y"]
-        row.extend(head)
-        writer.writerow(row)
-        # 写入多行用writerows
-        writer.writerows(db_data)
+    db_data.to_csv(file_path, index=False, sep=',')
 
     return prefix, file_path
 

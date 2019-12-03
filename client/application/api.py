@@ -1,10 +1,11 @@
 from flask import Blueprint, jsonify, make_response, request, current_app
 from .utils import ok_response, error_response, upload_json, exec_upload_task, get_timeid, exec_modeling_task, job_status_checker, get_model, generate_csv, get_dataframe
-from .db import get_db
+from .db import get_db, get_db_engine
 import time
 import csv
 import json
 import os
+import pandas as pd
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -21,23 +22,25 @@ def read_data():
     data = request.get_json()
 
     sql = data.get('data_sql')
+    attributes = data.get('attributes')
+
     # 没有sql语句
     if not sql:
         return error_response(message="None data_sql in request.")
 
-    db = get_db()
-    db_data = None
+    # 没有attributes
+    if not attributes or type(attributes) is not list:
+        return error_response(message="None attributes in request, or attributes is not a array.")
+
+    db_engine = get_db_engine()
     try:
-        db_data = db.execute(r'''{}'''.format(sql)).fetchall()
+        df = pd.read_sql(sql, con=db_engine)
+        db_data = df[attributes]
     except Exception as e:
         return error_response(message="Query data from database error. Error info: " + str(e))
 
     if (len(db_data) == 0):
         return error_response(message="没有满足条件的数据")
-
-    table_head = len(db_data[0])
-    if (table_head < 2):
-        return error_response(message="数据缺少id或者标签")
 
     tmp_path = current_app.config['TEMP_DATA_DIR']
 
@@ -47,7 +50,7 @@ def read_data():
     conf_json = upload_json(file_path, prefix, template)
     fate_flow_path = current_app.config['FATE_FLOW_PATH']
 
-    stdout = exec_upload_task(conf_json, "", fate_flow_path)    
+    stdout = exec_upload_task(conf_json, "", fate_flow_path)
 
     return ok_response(data=stdout)
 
@@ -114,25 +117,29 @@ def infer_with_model():
     data = request.get_json()
     data_sql = data.get('data_sql')
     model_params = data.get('model_params')
+    attributes = data.get('attributes')
 
     # Get data
     # 没有sql语句
     if not data_sql:
         return error_response(message="None data_sql in request.")
 
-    db = get_db()
-    db_data = None
+    if not model_params:
+        return error_response(message="None model_params in request.")
+
+    # 没有attributes
+    if not attributes or type(attributes) is not list:
+        return error_response(message="None attributes in request, or attributes is not a array.")
+
+    db_engine = get_db_engine()
     try:
-        db_data = db.execute(r'''{}'''.format(data_sql)).fetchall()
+        df = pd.read_sql(data_sql, con=db_engine)
+        db_data = df[attributes]
     except Exception as e:
         return error_response(message="Query data from database error. Error info: " + str(e))
 
     if (len(db_data) == 0):
         return error_response(message="没有满足条件的数据")
-
-    table_head = len(db_data[0])
-    if (table_head < 2):
-        return error_response(message="数据缺少id或者属性")
 
     tmp_path = current_app.config['TEMP_DATA_DIR']
 
