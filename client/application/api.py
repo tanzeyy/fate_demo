@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, make_response, request, current_app
-from .utils import ok_response, error_response, upload_json, exec_upload_task, get_timeid, exec_modeling_task, job_status_checker, get_model
+from .utils import ok_response, error_response, upload_json, exec_upload_task, get_timeid, exec_modeling_task, job_status_checker, get_model, generate_csv, get_dataframe
 from .db import get_db
 import time
 import csv
@@ -38,25 +38,10 @@ def read_data():
     table_head = len(db_data[0])
     if (table_head < 2):
         return error_response(message="数据缺少id或者标签")
-    head = ['x' + str(i) for i in range(table_head-2)]
 
     tmp_path = current_app.config['TEMP_DATA_DIR']
-    try:
-        os.makedirs(tmp_path)
-    except:
-        pass
 
-    prefix = get_timeid()
-    file_path = os.path.join(tmp_path, prefix + '.csv')
-
-    with open(file_path, "w") as csvfile:
-        writer = csv.writer(csvfile)
-        # 先写入columns_name
-        row = ["x", "y"]
-        row.extend(head)
-        writer.writerow(row)
-        # 写入多行用writerows
-        writer.writerows(db_data)
+    prefix, file_path = generate_csv(db_data=db_data, tmp_path=tmp_path)
 
     template = current_app.config['UPLOAD_TEMPLATE']
     conf_json = upload_json(file_path, prefix, template)
@@ -131,6 +116,29 @@ def infer_with_model():
     model_params = data.get('model_params')
 
     # Get data
+    # 没有sql语句
+    if not data_sql:
+        return error_response(message="None data_sql in request.")
+
+    db = get_db()
+    db_data = None
+    try:
+        db_data = db.execute(r'''{}'''.format(data_sql)).fetchall()
+    except Exception as e:
+        return error_response(message="Query data from database error. Error info: " + str(e))
+
+    if (len(db_data) == 0):
+        return error_response(message="没有满足条件的数据")
+
+    table_head = len(db_data[0])
+    if (table_head < 2):
+        return error_response(message="数据缺少id或者属性")
+
+    tmp_path = current_app.config['TEMP_DATA_DIR']
+
+    _, file_path = generate_csv(db_data=db_data, tmp_path=tmp_path)
+    data_frame = get_dataframe(file_path)
+
     # Predict
     # Return result 
     

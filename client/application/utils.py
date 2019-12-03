@@ -6,6 +6,8 @@ import time
 import random
 import sys
 import traceback
+import csv
+import pandas as pd
 
 HOME_DIR = os.path.split(os.path.realpath(__file__))[0]
 SUCCESS = 'success'
@@ -202,4 +204,32 @@ def get_model(jobid, party_id, role, cpn, fate_flow_path):
         raise ValueError(
             "[Task]exec fail, status:{}, stdout:{}".format(status, stdout))
     return stdout
-    
+
+
+def generate_csv(db_data, tmp_path):
+    try:
+        os.makedirs(tmp_path)
+    except:
+        pass
+
+    prefix = get_timeid()
+    file_path = os.path.join(tmp_path, prefix + '.csv')
+
+    table_head = len(db_data[0])
+    head = ['x' + str(i) for i in range(table_head - 2)]
+
+    with open(file_path, "w") as csvfile:
+        writer = csv.writer(csvfile)
+        # 先写入columns_name
+        row = ["x", "y"]
+        row.extend(head)
+        writer.writerow(row)
+        # 写入多行用writerows
+        writer.writerows(db_data)
+
+    return prefix, file_path
+
+def get_dataframe(file_path):
+    file = pd.read_csv(file_path)
+    dataframe = pd.DataFrame(file)
+    return dataframe
