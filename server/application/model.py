@@ -19,6 +19,8 @@ def model_train():
     party_id = data.get('party_id')
     data_info = data.get('data_info')
     attributes = data.get('attributes')
+    label_name = data.get('label_name')
+    attributes.append(label_name)
 
     db = get_db()
     initiator = db.query(User).filter(User.id == user_id).first()
@@ -49,6 +51,8 @@ def model_train():
         conf_dict['role_parameters']['host']['args']['data']['train_data'] = [{'namespace': json.loads(responses[uid].get().text)['data']['data']['namespace'], 'name': json.loads(responses[uid].get().text)['data']['data']['table_name']} for uid in conf_dict['role']['host']]
 
         conf_dict['algorithm_parameters']['homo_lr_0'] = model_param
+
+        conf_dict['algorithm_parameters']['dataio_0']['label_name'] = label_name
 
     # Read DSL file
     with open(current_app.config['LR_DSL_TEMPLATE'], 'r', encoding='utf-8') as f:

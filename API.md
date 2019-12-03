@@ -19,36 +19,37 @@
 
   ```json
   {
-  	 "user_id": 4, 
-  	 "model_type": "lr",
-  	 "model_params": {
-  	        "penalty": "L2",
-  	        "optimizer": "sgd",
-  	        "eps": 1e-4,
-  	        "alpha": 0.01,
-  	        "max_iter": 30,
-  	        "converge_func": "diff",
-  	        "batch_size": 500,
-  	        "learning_rate": 0.15,
-  	        "decay": 1,
-  	        "decay_sqrt": true,
-  	        "init_param": {
-  	            "init_method": "zeros"
-  	        },
-  	        "encrypt_param": {
-  	            "method": "Paillier"
-  	        },
-  	        "cv_param": {
-  	            "need_cv": false
-  	        }
-  	    },
-  	    "party_id": [2, 3],
-  	    "data_info": {
-  	     "4": "SELECT * FROM data.breast_homo_guest;",
-  	     "2": "SELECT * FROM data.breast_homo_host;",
-  	     "3": "SELECT * FROM data.breast_homo_host;"
-  	    }
-      
+	 "user_id": 4, 
+	 "model_type": "lr",
+	 "model_params": {
+	        "penalty": "L2",
+	        "optimizer": "sgd",
+	        "eps": 1e-4,
+	        "alpha": 0.01,
+	        "max_iter": 30,
+	        "converge_func": "diff",
+	        "batch_size": 500,
+	        "learning_rate": 0.15,
+	        "decay": 1,
+	        "decay_sqrt": true,
+	        "init_param": {
+	            "init_method": "zeros"
+	        },
+	        "encrypt_param": {
+	            "method": "Paillier"
+	        },
+	        "cv_param": {
+	            "need_cv": false
+	        }
+	    },
+    "party_id": [2,3],
+    "data_info": {
+     "4": "SELECT * FROM data.breast_homo_guest;",
+     "2": "SELECT * FROM data.breast_homo_host;",
+     "3": "SELECT * FROM data.breast_homo_host;"
+    },
+    "attributes": ["x1", "x2", "x3", "x4"],
+    "label_name" : "x5"
   }
   ```
 
