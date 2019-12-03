@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, make_response, request, current_app
-from .utils import ok_response, error_response, upload_json, exec_upload_task, get_timeid, exec_modeling_task, job_status_checker
+from .utils import ok_response, error_response, upload_json, exec_upload_task, get_timeid, exec_modeling_task, job_status_checker, get_model
 from .db import get_db
 import time
 import csv
@@ -105,3 +105,32 @@ def check_status():
     stdout = job_status_checker(fate_job_id, fate_flow_path)
 
     return ok_response(data=stdout)
+
+
+@bp.route('/get_model_params', methods=['POST'])
+def get_model_param():
+    if not request.data:
+        return error_response(message="None data.")
+    data = request.get_json()
+    fate_job_id = data.get('fate_job_id')
+    party_id = data.get('party_id')
+    role = data.get('role')
+    cpn = data.get('cpn')
+    fate_flow_path = current_app.config['FATE_FLOW_PATH']
+    stdout = get_model(fate_job_id, party_id, role, cpn, fate_flow_path)
+
+    return ok_response(data=stdout)
+
+
+@bp.route('/infer', methods=['POST'])
+def infer_with_model():
+    if not request.data:
+        return error_response(message="None data.")
+    data = request.get_json()
+    data_sql = data.get('data_sql')
+    model_params = data.get('model_params')
+
+    # Get data
+    # Predict
+    # Return result 
+    

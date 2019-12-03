@@ -180,112 +180,19 @@ def job_status_checker(jobid, fate_flow_path):
     return SUCCESS
 
 
-def wait_query_job(jobid):
-    start = time.time()
-    while True:
-        job_status = job_status_checker(jobid)
-        if job_status == SUCCESS:
-            print("Task Finished")
-            break
-        elif job_status == FAIL:
-            print("Task Failed")
-            break
-        else:
-            time.sleep(RETRY_JOB_STATUS_TIME)
-            end = time.time()
-            print("Task is running, wait time: {}".format(end - start))
-
-            if end - start > MAX_WAIT_TIME:
-                print("Task Failed, may by stuck in federation")
-                break
-
-
-def submit_job():
-    with open(DSL_PATH, 'r', encoding='utf-8') as f:
-        dsl_json = json.loads(f.read())
-
-    with open(SUBMIT_CONF_PATH, 'r', encoding='utf-8') as f:
-        conf_json = json.loads(f.read())
-
-    conf_json['job_parameters']['work_mode'] = WORK_MODE
-
-    conf_json['initiator']['party_id'] = GUEST_ID
-    conf_json['role']['guest'] = [GUEST_ID]
-    conf_json['role']['host'] = [HOST_ID]
-    conf_json['role']['arbiter'] = [ARBITER_ID]
-
-    guest_table_name, guest_namespace = generate_data_info(GUEST)
-    host_table_name, host_namespace = generate_data_info(HOST)
-
-    conf_json['role_parameters']['guest']['args']['data']['train_data'] = [
-        {
-            'name': guest_table_name,
-            'namespace': guest_namespace
-        }
-    ]
-    conf_json['role_parameters']['host']['args']['data']['train_data'] = [
-        {
-            'name': host_table_name,
-            'namespace': host_namespace
-        }
-    ]
-
-    # print("Submit job config json: {}".format(conf_json))
-    stdout = exec_modeling_task(dsl_json, conf_json)
-    job_id = stdout['jobId']
-    fate_board_url = stdout['data']['board_url']
-    print("Please check your task in fate-board, url is : {}".format(fate_board_url))
-    log_path = HOME_DIR + '/../../logs/{}'.format(job_id)
-    print("The log info is located in {}".format(log_path))
-    wait_query_job(job_id)
-
-
-def predict_task():
-    try:
-        with open(LATEST_TRAINED_RESULT, 'r', encoding='utf-8') as f:
-            model_info = json.loads(f.read())
-    except FileNotFoundError:
-        raise FileNotFoundError('Train Result not Found, please finish a train task before going to predict task')
-
-    model_id = model_info['data']['model_info']['model_id']
-    model_version = model_info['data']['model_info']['model_version']
-
-    with open(TEST_PREDICT_CONF, 'r', encoding='utf-8') as f:
-        predict_conf = json.loads(f.read())
-
-    predict_conf['initiator']['party_id'] = GUEST_ID
-    predict_conf['job_parameters']['work_mode'] = WORK_MODE
-    predict_conf['job_parameters']['model_id'] = model_id
-    predict_conf['job_parameters']['model_version'] = model_version
-
-    predict_conf['role']['guest'] = [GUEST_ID]
-    predict_conf['role']['host'] = [HOST_ID]
-    predict_conf['role']['arbiter'] = [ARBITER_ID]
-
-    guest_table_name, guest_namespace = generate_data_info(GUEST)
-    host_table_name, host_namespace = generate_data_info(HOST)
-
-    predict_conf['role_parameters']['guest']['args']['data']['eval_data'] = [
-        {
-            'name': guest_table_name,
-            'namespace': guest_namespace
-        }
-    ]
-
-    predict_conf['role_parameters']['host']['args']['data']['eval_data'] = [
-        {
-            'name': host_table_name,
-            'namespace': host_namespace
-        }
-    ]
-
-    predict_conf_path = save_config_file(predict_conf, 'predict_conf')
+def get_model(jobid, party_id, role, cpn, fate_flow_path):
     subp = subprocess.Popen(["python",
-                             FATE_FLOW_PATH,
+                             fate_flow_path,
                              "-f",
-                             "submit_job",
-                             "-c",
-                             predict_conf_path
+                             "component_output_model",
+                             "-j",
+                             jobid,
+                             "-p",
+                             party_id,
+                             "-r",
+                             role,
+                             "-cpn",
+                             cpn
                              ],
                             shell=False,
                             stdout=subprocess.PIPE,
@@ -295,10 +202,8 @@ def predict_task():
     print("stdout:" + str(stdout))
     stdout = json.loads(stdout)
     status = stdout["retcode"]
-    job_id = stdout['jobId']
-    wait_query_job(job_id)
     if status != 0:
         raise ValueError(
-            "[Upload task]exec fail, status:{}, stdout:{}".format(status, stdout))
+            "[Task]exec fail, status:{}, stdout:{}".format(status, stdout))
     return stdout
-
+    

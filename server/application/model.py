@@ -1,7 +1,7 @@
 from multiprocessing import Pool
 
 from flask import Blueprint, jsonify, make_response, request, current_app
-from .libs.utils import ok_response, error_response, submit_data, submit_train_task, check_job_status
+from .libs.utils import ok_response, error_response, submit_data, submit_train_task, check_job_status, get_model
 from .libs.db import get_db
 from .libs.models import User, Model, Order
 import json
