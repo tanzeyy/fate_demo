@@ -18,6 +18,7 @@ def model_train():
     model_param = data.get('model_params')
     party_id = data.get('party_id')
     data_info = data.get('data_info')
+    attributes = data.get('attributes')
 
     db = get_db()
     initiator = db.query(User).filter(User.id == user_id).first()
@@ -28,7 +29,7 @@ def model_train():
     for k, v in data_info.items():
         user = db.query(User).filter(User.id==k).first()
         url = user.client_url + "/api/read_data"
-        responses[user.party_id] = p.apply_async(submit_data, args=(url, v, ))
+        responses[user.party_id] = p.apply_async(submit_data, args=(url, v, attributes, ))
     p.close()
     p.join()
 
@@ -62,7 +63,7 @@ def model_train():
     model_version = model_info['model_version']
 
     print(model_info)
-
+    model_param['attributes'] = attributes
     model = Model(model_id, model_version, json.dumps(model_param))
     order = Order(model_version, "train", json.dumps(data), json.dumps(conf_dict))
     initiator.models.append(model)
