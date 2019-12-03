@@ -26,6 +26,13 @@ def redirect_response(url=None):
     return make_response(jsonify(code=302, url=url), 200)
 
 
+def homo_lr_predict(df, params):
+    bias = params['data']['data']['intercept']
+    weights_dict = params['data']['data']['weight']
+    weights = pd.DataFrame(weights_dict, index=df.index)
+    return 1 / (1 + np.exp(- ((df * weights).sum(axis=1) + bias)))
+
+
 def exec_upload_task(config_dict, fate_flow_path):
     prefix = "upload"
     config_path = save_config_file(config_dict=config_dict, prefix=prefix)
@@ -83,17 +90,6 @@ def prettify(response, verbose=True):
         print(json.dumps(response, indent=4))
         print()
     return response
-
-
-def save_config_file(config_dict, prefix):
-    config = json.dumps(config_dict)
-    config_path = gen_unique_path(prefix)
-    config_dir_path = os.path.dirname(config_path)
-    os.makedirs(config_dir_path, exist_ok=True)
-    with open(config_path, "w") as fout:
-        # print("path:{}".format(config_path))
-        fout.write(config + "\n")
-    return config_path
 
 
 def exec_upload_task(config_dict, role, fate_flow_path):
