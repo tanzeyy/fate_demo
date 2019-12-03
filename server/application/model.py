@@ -1,7 +1,7 @@
 from multiprocessing import Pool
 
 from flask import Blueprint, jsonify, make_response, request, current_app
-from .libs.utils import ok_response, error_response, submit_data, submit_train_task, check_job_status
+from .libs.utils import ok_response, error_response, submit_data, submit_train_task, check_job_status, query_model_params, submit_infer_task
 from .libs.db import get_db
 from .libs.models import User, Model, Order
 import json
@@ -119,9 +119,25 @@ def model_infer():
     db = get_db()
 
     model = db.query(Model).filter(Model.id == model_id).first()
+
+    fate_job_id = model.fate_version
+    model_owner = model.users[0]
+    party_id = model_owner.party_id
+    role = "guest"
+    cpn = "homo_lr_0"
+    url = model_owner.client_url + '/api/get_model_params'
+
+    response = query_model_params(url, fate_job_id, party_id, role, cpn)
+    model_weights = json.loads(response.text)
     model_info = json.loads(model)
     unique_id = model_info['unique_id']
     attributes = model_info['attributes']
+
+    url = model_owner.client_url + '/api/infer'
+    response = submit_infer_task(url, model_id, model_weights, attributes, unique_id)
+
+    print(response.text)
+    return ok_response()
 
 
 

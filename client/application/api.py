@@ -147,7 +147,7 @@ def infer_with_model():
 
     # Predict
     results = homo_lr_predict(db_data, model_params)
-
+    
 
     # Return result 
     
