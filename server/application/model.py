@@ -108,7 +108,7 @@ def train_status():
     return ok_response(message=status_info['message'], data={'model_id': model_id, 'train_status':status_info['data']})
 
 
-@bp.route('/infer', method=['POST'])
+@bp.route('/infer', methods=['POST'])
 def model_infer():
     if not request.data:
         return error_response(message="None data.")
@@ -129,7 +129,7 @@ def model_infer():
 
     response = query_model_params(url, fate_job_id, party_id, role, cpn)
     model_weights = json.loads(response.text)
-    model_info = json.loads(model)
+    model_info = json.loads(model.info)
     unique_id = model_info['unique_id']
     attributes = model_info['attributes']
 
@@ -139,5 +139,36 @@ def model_infer():
     print(response.text)
     return ok_response()
 
+
+@bp.route('/info', methods=['GET'])
+def model_info():
+    model_id = request.args.get('model_id')
+
+    if model_id is None:
+        return error_response("None model_id.")
+
+    db = get_db()
+    model = db.query(Model).filter(Model.id == model_id).first()
+
+    if (model is None):
+        return error_response("Error model_id.")
+
+    response = {}
+    model_owner = model.users[0]
+    model_info = json.loads(model.info)
+    data_volum = model_info['data_volum']
+    model_info.pop('data_volum')
+    response['model_params'] = model_info
+    response['user_id'] = model_owner.id
+    response['model_type'] = 'Logistic Regression'
+
+    order_info = {}
+    for order in model.orders:
+        if order.type == 'train':
+            order_info = json.loads(order.order_info)
+            break
+    response['party_id'] = order_info.get('party_id')
+    response['data_volum'] = data_volum
+    return ok_response(data=response)
 
 
