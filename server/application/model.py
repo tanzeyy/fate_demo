@@ -1,10 +1,15 @@
+import json
 from multiprocessing import Pool
 
-from flask import Blueprint, jsonify, make_response, request, current_app
-from .libs.utils import ok_response, error_response, submit_data, submit_train_task, check_job_status, query_model_params, submit_infer_task
+from flask import Blueprint, current_app, jsonify, make_response, request
+
+from .tasks import infer_task
+
 from .libs.db import get_db
-from .libs.models import User, Model, Order
-import json
+from .libs.models import Model, Order, User
+from .libs.utils import (check_job_status, error_response, ok_response,
+                         query_model_params, submit_data, submit_infer_task,
+                         submit_train_task)
 
 bp = Blueprint('model', __name__, url_prefix='/model')
 
@@ -142,12 +147,32 @@ def model_infer():
     
     predict_user = db.query(User).filter(User.id==user_id).first()
     url = predict_user.client_url + '/api/infer'
-    response = submit_infer_task(url, data_sql, model_weights, attributes, unique_id)
+    job_info = {'infer_status': 'runnning', 'result': ''}
+    order = Order(type="infer", order_info=data, job_info=json.dumps(job_info))
+    db.add(order)
+    db.commit()
+    infer_task.delay(url, data_sql, model_weights, attributes, unique_id, order.id)
+    return ok_response(data={'order_id': order.id})
 
-    return ok_response(data=json.loads(response.text)['data'])
+
+@bp.route('/infer_status/', methods=['GET'])
+def infer_status():
+    order_id = request.args.get('order_id')
+    if order_id is None:
+        return error_response("None order_id.")
+
+    db = get_db()
+    order = db.query(Order).filter(Order.id==order_id).first()
+    if order is None:
+        return error_response("No order found! Please check your order_id.")
+
+    if order.type != "infer":
+        return error_response("The order is not a inference order, please check your order_id.")
+
+    return ok_response(data=json.loads(order.job_info))
 
 
-@bp.route('/info', methods=['GET'])
+@bp.route('/info/', methods=['GET'])
 def model_info():
     model_id = request.args.get('model_id')
 
@@ -177,5 +202,3 @@ def model_info():
     response['party_id'] = order_info.get('party_id')
     response['data_volum'] = data_volum
     return ok_response(data=response)
-
-

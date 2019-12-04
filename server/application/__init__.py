@@ -2,6 +2,21 @@ import os
 
 from flask import Flask
 from flask_cors import CORS
+from celery import Celery
+from instance import config
+
+celery = Celery(__name__, backend=config.CELERY_RESULT_BACKEND, broker=config.CELERY_BROKER_URL)
+
+def register_celery(app):
+    celery.conf.update(app.config)
+
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return self.run(*args, **kwargs)
+
+    celery.Task = ContextTask
+    return celery
 
 def create_app(test_config=None):
     # Create and configure the app.
@@ -31,6 +46,6 @@ def create_app(test_config=None):
     from . import model
     app.register_blueprint(model.bp)
 
-    # from . import metadata
-    # app.register_blueprint(metadata.bp)
+    register_celery(app)
+
     return app

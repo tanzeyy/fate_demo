@@ -80,7 +80,7 @@ class Order(Base):
     model_id = Column(Integer, ForeignKey('models.id'))
     model = relationship("Model", foreign_keys=model_id,  back_populates='orders')
 
-    def __init__(self, fate_job_id, type, order_info, job_info):
+    def __init__(self, fate_job_id=None, type=None, order_info=None, job_info=None):
         self.fate_job_id = fate_job_id
         self.order_info = order_info
         self.job_info = job_info
