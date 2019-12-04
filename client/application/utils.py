@@ -15,8 +15,8 @@ SUCCESS = 'success'
 RUNNING = 'running'
 FAIL = 'failed'
 
-def ok_response(message=None, data=None):
-    return make_response(jsonify(code=200, message=message, data=data), 200)
+def ok_response(message=None, data=None, info=None):
+    return make_response(jsonify(code=200, message=message, data=data, info=info), 200)
 
 
 def error_response(message=None):
@@ -31,7 +31,7 @@ def homo_lr_predict(df, params):
     bias = params['data']['data']['intercept']
     weights_dict = params['data']['data']['weight']
     weights = pd.DataFrame(weights_dict, index=df.index)
-    return 1 / (1 + np.exp(- ((df * weights).sum(axis=1) + bias)))
+    return 1 / (1 + np.exp(- ((df * weights).fillna(0).sum(axis=1) + bias)))
 
 
 def exec_upload_task(config_dict, fate_flow_path):

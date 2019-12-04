@@ -27,8 +27,12 @@ def check_job_status(url, fate_job_id):
     return requests.post(url, json={'fate_job_id': fate_job_id})
 
 # Request model infer
-def submit_infer_task(url, model_id, model_params, attributes, unique_id):
-    return requests.post(url, json={'model_id':model_id, 'model_params':model_params, 'attributes':attributes, 'unique_id':unique_id})
+def submit_infer_task(url, data_sql, model_params, attributes, unique_id):
+    data = {'data_sql':data_sql, 'model_params':model_params, 'attributes':attributes, 'unique_id':unique_id}
+    print(data)
+    return requests.post(url, json=data)
 
 def query_model_params(url, fate_job_id, party_id, role, cpn):
-    return requests.post(url, json={'fate_job_id':fate_job_id, 'part_id':party_id, 'role': role, 'cpn':cpn})
+    data = {'fate_job_id':fate_job_id, 'party_id':party_id, 'role': role, 'cpn':cpn}
+    print(data)
+    return requests.post(url, json=data)

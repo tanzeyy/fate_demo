@@ -39,8 +39,8 @@ def read_data():
     except Exception as e:
         return error_response(message="Query data from database error. Error info: " + str(e))
 
-    if (len(db_data) == 0):
-        return error_response(message="没有满足条件的数据")
+    # if (len(db_data) == 0):
+    #     return error_response(message="没有满足条件的数据")
 
     tmp_path = current_app.config['TEMP_DATA_DIR']
 
@@ -51,8 +51,8 @@ def read_data():
     fate_flow_path = current_app.config['FATE_FLOW_PATH']
 
     stdout = exec_upload_task(conf_json, "", fate_flow_path)
-
-    return ok_response(data=stdout)
+    info = {"data_volum":len(df)}
+    return ok_response(data=stdout, info=info)
 
 
 @bp.route('/training_task', methods=['POST'])
@@ -137,7 +137,7 @@ def infer_with_model():
 
     db_engine = get_db_engine()
     try:
-        df = pd.read_sql(data_sql, con=db_engine)
+        df = pd.read_sql(data_sql, con=db_engine, coerce_float=True)
         db_data = df[attributes]
     except Exception as e:
         return error_response(message="Query data from database error. Error info: " + str(e))
@@ -146,8 +146,9 @@ def infer_with_model():
         return error_response(message="没有满足条件的数据")
 
     # Predict
-    results = homo_lr_predict(db_data, model_params)
-    
+    results = homo_lr_predict(db_data.astype('float64'), model_params).to_frame(name='label')
+    results[unique_id] = df[unique_id]
+    outputs = results.to_dict("records")
 
-    # Return result 
+    return ok_response(data=outputs)
     

@@ -21,12 +21,14 @@ def model_train():
     attributes = data.get('attributes')
     label_name = data.get('label_name')
     original_attr = attributes
-    attributes.append(label_name)
     unique_id = data.get('unique_id')
+    attributes = [unique_id] + attributes + [label_name]
 
     db = get_db()
     initiator = db.query(User).filter(User.id == user_id).first()
     hosts = [db.query(User).filter(User.id == uid).first() for uid in party_id]
+
+    id_map = {user.party_id: user.id for user in [initiator] + hosts}
 
     responses = {}
     p = Pool(len(data_info))
@@ -36,6 +38,9 @@ def model_train():
         responses[user.party_id] = p.apply_async(submit_data, args=(url, v, attributes, ))
     p.close()
     p.join()
+    data_volum = {
+        id_map[pid]: json.loads(responses[pid].get().text)['info']['data_volum'] for pid in id_map.keys()
+    }
 
     # Generate config file
     with open(current_app.config['TRAIN_TEMPLATE'], 'r', encoding='utf-8') as f:
@@ -49,8 +54,8 @@ def model_train():
         conf_dict['role']['arbiter'] = [initiator.party_id]
 
         # DO NOT CHANGE
-        conf_dict['role_parameters']['guest']['args']['data']['train_data'] = [{'namespace': json.loads(responses[uid].get().text)['data']['data']['namespace'], 'name': json.loads(responses[uid].get().text)['data']['data']['table_name']} for uid in conf_dict['role']['guest']]
-        conf_dict['role_parameters']['host']['args']['data']['train_data'] = [{'namespace': json.loads(responses[uid].get().text)['data']['data']['namespace'], 'name': json.loads(responses[uid].get().text)['data']['data']['table_name']} for uid in conf_dict['role']['host']]
+        conf_dict['role_parameters']['guest']['args']['data']['train_data'] = [{'namespace': json.loads(responses[pid].get().text)['data']['data']['namespace'], 'name': json.loads(responses[pid].get().text)['data']['data']['table_name']} for pid in conf_dict['role']['guest']]
+        conf_dict['role_parameters']['host']['args']['data']['train_data'] = [{'namespace': json.loads(responses[pid].get().text)['data']['data']['namespace'], 'name': json.loads(responses[pid].get().text)['data']['data']['table_name']} for pid in conf_dict['role']['host']]
 
         conf_dict['algorithm_parameters']['homo_lr_0'] = model_param
 
@@ -72,6 +77,7 @@ def model_train():
     model_param['attributes'] = original_attr
     model_param['unique_id'] = unique_id
     model_param['label_name'] = label_name
+    model_param['data_volum'] = data_volum
     model = Model(model_id, model_version, json.dumps(model_param))
     order = Order(model_version, "train", json.dumps(data), json.dumps(conf_dict))
     initiator.models.append(model)
@@ -80,7 +86,7 @@ def model_train():
     db.add(order)
     db.commit()
 
-    return ok_response(data={"model_id": model.id, "order_id": order.id})
+    return ok_response(data={"model_id": model.id, "order_id": order.id, "data_volum": data_volum})
 
 
 @bp.route('/train_status', methods=['GET'])
@@ -108,13 +114,14 @@ def train_status():
     return ok_response(message=status_info['message'], data={'model_id': model_id, 'train_status':status_info['data']})
 
 
-@bp.route('/infer', method=['POST'])
+@bp.route('/infer', methods=['POST'])
 def model_infer():
     if not request.data:
         return error_response(message="None data.")
     data = request.get_json()
     model_id = data.get('model_id')
-    data_sql = data.get('input_data')
+    user_id = data.get('input_data').get('user_id')
+    data_sql = data.get('input_data').get('data_sql')
 
     db = get_db()
 
@@ -122,22 +129,22 @@ def model_infer():
 
     fate_job_id = model.fate_version
     model_owner = model.users[0]
-    party_id = model_owner.party_id
+    party_id = str(model_owner.party_id)
     role = "guest"
     cpn = "homo_lr_0"
     url = model_owner.client_url + '/api/get_model_params'
 
     response = query_model_params(url, fate_job_id, party_id, role, cpn)
     model_weights = json.loads(response.text)
-    model_info = json.loads(model)
+    model_info = json.loads(model.info)
     unique_id = model_info['unique_id']
     attributes = model_info['attributes']
+    
+    predict_user = db.query(User).filter(User.id==user_id).first()
+    url = predict_user.client_url + '/api/infer'
+    response = submit_infer_task(url, data_sql, model_weights, attributes, unique_id)
 
-    url = model_owner.client_url + '/api/infer'
-    response = submit_infer_task(url, model_id, model_weights, attributes, unique_id)
-
-    print(response.text)
-    return ok_response()
+    return ok_response(data=json.loads(response.text)['data'])
 
 
 
