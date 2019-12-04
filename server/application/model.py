@@ -147,4 +147,35 @@ def model_infer():
     return ok_response(data=json.loads(response.text)['data'])
 
 
+@bp.route('/info', methods=['GET'])
+def model_info():
+    model_id = request.args.get('model_id')
+
+    if model_id is None:
+        return error_response("None model_id.")
+
+    db = get_db()
+    model = db.query(Model).filter(Model.id == model_id).first()
+
+    if (model is None):
+        return error_response("Error model_id.")
+
+    response = {}
+    model_owner = model.users[0]
+    model_info = json.loads(model.info)
+    data_volum = model_info['data_volum']
+    model_info.pop('data_volum')
+    response['model_params'] = model_info
+    response['user_id'] = model_owner.id
+    response['model_type'] = 'Logistic Regression'
+
+    order_info = {}
+    for order in model.orders:
+        if order.type == 'train':
+            order_info = json.loads(order.order_info)
+            break
+    response['party_id'] = order_info.get('party_id')
+    response['data_volum'] = data_volum
+    return ok_response(data=response)
+
 
