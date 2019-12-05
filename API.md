@@ -9,7 +9,7 @@
 
 
 
-### 模型训练订单提交
+### 模型训练
 
 - 请求地址：`http://192.168.25.105:5000/model/train`
 
@@ -154,7 +154,7 @@
           "user_id": 4
       },
       "message": null
-}
+  }
   ```
   
   
@@ -169,7 +169,7 @@
 
   ```json
   {
-  	"model_id": "38",
+  	"model_id": "32",
   	"input_data": {
   		"user_id": "4",
   		"data_sql": "SELECT * FROM data.breast_homo_guest where id=0;"
@@ -177,4 +177,44 @@
   }
   ```
 
-### 
+- 请求成功返回：
+
+  ```json
+  {
+      "code": 200,
+      "data": {
+          "order_id": 58
+      },
+      "message": null
+  }
+  ```
+
+  
+
+### 计算进度查询
+
+- 请求地址：`http://192.168.25.105:5000/model/infer_status`
+
+- 请求方式：`GET`
+
+- 请求参数：`order_id=58`
+
+- 请求成功返回：
+
+  ```json
+  {
+      "code": 200,
+      "data": {
+          "infer_status": "finished",
+          "result": [
+              {
+                  "id": "0",
+                  "label": 0.5067305295607227
+              }
+          ]
+      },
+      "message": null
+  }
+  ```
+
+  
