@@ -15,8 +15,8 @@ def redirect_response(url=None):
 
 
 # Submit data
-def submit_data(url, data_sql, attributes):
-    return requests.post(url, json={"data_sql": data_sql, "attributes": attributes})
+def submit_data(url, data_sql, attributes, scenario):
+    return requests.post(url, json={"data_sql": data_sql, "attributes": attributes, "scenario": scenario})
 
 # Submit train task
 def submit_train_task(url, conf, dsl):

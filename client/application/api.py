@@ -23,6 +23,7 @@ def read_data():
 
     sql = data.get('data_sql')
     attributes = data.get('attributes')
+    label_value = data.get('label_value')
 
     # 没有sql语句
     if not sql:
@@ -36,6 +37,9 @@ def read_data():
     try:
         df = pd.read_sql(sql, con=db_engine)
         db_data = df[attributes]
+        label_name = attributes[-1]
+        db_data[label_name].replace(label_value, 1, inplace=True)
+        db_data[label_name].loc[db_data[label_name] != 1] = 0
     except Exception as e:
         return error_response(message="Query data from database error. Error info: " + str(e))
 

@@ -28,6 +28,7 @@ def model_train():
     original_attr = attributes
     unique_id = data.get('unique_id')
     attributes = [unique_id] + attributes + [label_name]
+    scenario = data.get('scenario')
 
     db = get_db()
     initiator = db.query(User).filter(User.id == user_id).first()
@@ -40,7 +41,7 @@ def model_train():
     for k, v in data_info.items():
         user = db.query(User).filter(User.id==k).first()
         url = user.client_url + "/api/read_data"
-        responses[user.party_id] = p.apply_async(submit_data, args=(url, v, attributes, ))
+        responses[user.party_id] = p.apply_async(submit_data, args=(url, v, attributes, scenario, ))
     p.close()
     p.join()
     data_volum = {
