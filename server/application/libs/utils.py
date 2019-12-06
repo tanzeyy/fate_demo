@@ -24,6 +24,7 @@ def submit_train_task(url, conf, dsl):
     
 # Request job status
 def check_job_status(url, fate_job_id):
+    print("Checking job status .... fate_job_id")
     return requests.post(url, json={'fate_job_id': fate_job_id})
 
 # Request model infer

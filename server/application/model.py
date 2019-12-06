@@ -1,9 +1,8 @@
 import json
-from multiprocessing import Pool
 
 from flask import Blueprint, current_app, jsonify, make_response, request
 
-from .tasks import infer_task
+from .tasks import infer_task, train_task
 
 from .libs.db import get_db
 from .libs.models import Model, Order, User
@@ -18,84 +17,19 @@ def model_train():
     if not request.data:
         return error_response(message="None data.")
     data = request.get_json()
-    user_id = data.get('user_id')
-    model_type = data.get('model_type')
-    model_param = data.get('model_params')
-    party_id = data.get('party_id')
-    data_info = data.get('data_info')
-    attributes = data.get('attributes')
-    label_name = data.get('label_name')
-    original_attr = attributes
-    unique_id = data.get('unique_id')
-    attributes = [unique_id] + attributes + [label_name]
-    label_value = data.get('label_value')
+    model = Model()
+    order = Order(type='train', order_info=json.dumps(data))
+    order.model = model
 
     db = get_db()
-    initiator = db.query(User).filter(User.id == user_id).first()
-    hosts = [db.query(User).filter(User.id == uid).first() for uid in party_id]
-
-    id_map = {user.party_id: user.id for user in [initiator] + hosts}
-
-    responses = {}
-    p = Pool(len(data_info))
-    for k, v in data_info.items():
-        user = db.query(User).filter(User.id==k).first()
-        url = user.client_url + "/api/read_data"
-        responses[user.party_id] = p.apply_async(submit_data, args=(url, v, attributes, label_value, ))
-    p.close()
-    p.join()
-    data_volum = dict()
-    for pid in id_map.keys():
-        response = json.loads(responses[pid].get().text)
-        if response['code'] != 200:
-            return error_response(message=response)
-        data_volum[id_map[pid]] = response['info']['data_volum']
-
-    # Generate config file
-    with open(current_app.config['TRAIN_TEMPLATE'], 'r', encoding='utf-8') as f:
-        conf_dict = json.loads(f.read())
-
-        conf_dict['initiator']['party_id'] = initiator.party_id
-        conf_dict['initiator']['role'] = 'guest'
-
-        conf_dict['role']['guest'] = [initiator.party_id]
-        conf_dict['role']['host'] = [host.party_id for host in hosts]
-        conf_dict['role']['arbiter'] = [initiator.party_id]
-
-        # DO NOT CHANGE
-        conf_dict['role_parameters']['guest']['args']['data']['train_data'] = [{'namespace': json.loads(responses[pid].get().text)['data']['data']['namespace'], 'name': json.loads(responses[pid].get().text)['data']['data']['table_name']} for pid in conf_dict['role']['guest']]
-        conf_dict['role_parameters']['host']['args']['data']['train_data'] = [{'namespace': json.loads(responses[pid].get().text)['data']['data']['namespace'], 'name': json.loads(responses[pid].get().text)['data']['data']['table_name']} for pid in conf_dict['role']['host']]
-
-        conf_dict['algorithm_parameters']['homo_lr_0'] = model_param
-
-        conf_dict['algorithm_parameters']['dataio_0']['label_name'] = label_name
-
-    # Read DSL file
-    with open(current_app.config['LR_DSL_TEMPLATE'], 'r', encoding='utf-8') as f:
-        dsl_dict = json.loads(f.read())
-
-    # print(conf_dict, dsl_dict)
-
-    response = submit_train_task(initiator.client_url+'/api/training_task', conf_dict, dsl_dict)
-
-    model_info = json.loads(response.text)['data']['data']['model_info']
-    model_id = model_info['model_id']
-    model_version = model_info['model_version']
-
-    print(model_info)
-    model_param['attributes'] = original_attr
-    model_param['unique_id'] = unique_id
-    model_param['label_name'] = label_name
-    model_param['data_volum'] = data_volum
-    model = Model(model_id, model_version, json.dumps(model_param))
-    order = Order(model_version, "train", json.dumps(data), json.dumps(conf_dict))
-    initiator.models.append(model)
-    order.model = model
     db.add(model)
     db.add(order)
     db.commit()
+    train_conf_template = current_app.config['TRAIN_TEMPLATE']
+    dsl_template = current_app.config['LR_DSL_TEMPLATE']
+    train_task.delay(data, train_conf_template, dsl_template, order.id, model.id)
 
-    return ok_response(data={"model_id": model.id, "order_id": order.id, "data_volum": data_volum})
+    return ok_response(data={"model_id": model.id, "order_id": order.id})
 
 
 @bp.route('/train_status', methods=['GET'])

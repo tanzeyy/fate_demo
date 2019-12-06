@@ -59,7 +59,7 @@ class Model(Base):
     orders = relationship("Order", back_populates='model')
 
 
-    def __init__(self, fate_id, fate_version, info=None):
+    def __init__(self, fate_id=None, fate_version=None, info=None):
         self.fate_id = fate_id
         self.fate_version = fate_version
         self.info = info
