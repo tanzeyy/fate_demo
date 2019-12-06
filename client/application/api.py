@@ -36,7 +36,7 @@ def read_data():
     db_engine = get_db_engine()
     try:
         df = pd.read_sql(sql, con=db_engine)
-        db_data = df[attributes].astype('float64', errros='ignore')
+        db_data = df[attributes].astype('float64', errors='ignore')
         label_name = attributes[-1]
         db_data[label_name].replace(label_value, 1, inplace=True)
         db_data.loc[db_data[label_name] != 1, label_name] = 0

@@ -44,7 +44,6 @@ def model_train():
         responses[user.party_id] = p.apply_async(submit_data, args=(url, v, attributes, label_value, ))
     p.close()
     p.join()
-    print(responses[9997].get().text)
     data_volum = dict()
     for pid in id_map.keys():
         response = json.loads(responses[pid].get().text)
