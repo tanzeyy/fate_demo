@@ -107,7 +107,7 @@ def train_task(data, train_conf_template, dsl_template, order_id, model_id):
     model_param['data_volum'] = data_volum
 
     order = db.query(Order).filter(Order.id==order_id).first()
-    order.fate_job_id = model.fate_id
+    order.fate_job_id = model.fate_version
     order.order_info = json.dumps(data)
     order.job_info = json.dumps(conf_dict)
 
