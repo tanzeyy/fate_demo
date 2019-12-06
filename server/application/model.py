@@ -44,7 +44,6 @@ def model_train():
         responses[user.party_id] = p.apply_async(submit_data, args=(url, v, attributes, label_value, ))
     p.close()
     p.join()
-    print(responses[9997].get().text)
     data_volum = {
         id_map[pid]: json.loads(responses[pid].get().text)['info']['data_volum'] for pid in id_map.keys()
     }
@@ -76,6 +75,7 @@ def model_train():
 
     response = submit_train_task(initiator.client_url+'/api/training_task', conf_dict, dsl_dict)
 
+    board_url = json.loads(response.text)['data']['data']['board_url']
     model_info = json.loads(response.text)['data']['data']['model_info']
     model_id = model_info['model_id']
     model_version = model_info['model_version']
@@ -86,6 +86,8 @@ def model_train():
     model_param['label_name'] = label_name
     model_param['data_volum'] = data_volum
     model = Model(model_id, model_version, json.dumps(model_param))
+
+    conf_dict['board_url'] = board_url
     order = Order(model_version, "train", json.dumps(data), json.dumps(conf_dict))
     initiator.models.append(model)
     order.model = model
@@ -109,6 +111,9 @@ def train_status():
     if order is None:
         return error_response(message="Error order_id")
 
+    if order.type != 'train' :
+        return error_response(message="Not a training order id")
+
     model_id = order.model_id
     fate_job_id = order.fate_job_id
     job_info = json.loads(order.order_info)
@@ -120,6 +125,41 @@ def train_status():
     status_info = json.loads(response.text)
     return ok_response(message=status_info['message'], data={'model_id': model_id, 'train_status':status_info['data']})
 
+
+@bp.route('/board_url', methods=['GET'])
+def board_url():
+    order_id = request.args.get('order_id')
+
+    if order_id is None:
+        return error_response("None order_id.")
+
+    db = get_db()
+    order = db.query(Order).filter(Order.id == order_id).first()
+
+    if order is None:
+        return error_response(message="Error order_id")
+
+    if order.type != 'train':
+        return error_response(message="Not a training order id")
+
+    # TODO：外网和端口
+    # nginx_conf = {'1':'', '2':'', '3': '', '4': ''}
+
+    url = "{}/#/dashboard?job_id={}&role={}&party_id={}"
+    job_info = json.loads(order.order_info)
+    fate_job_id = order.fate_job_id
+
+    board_url = dict()
+    def gen_url(user_id, role):
+        user = db.query(User).filter(User.id==user_id).first()
+        client_url = user.client_url.replace('5000', '8080')
+        return url.format(client_url, fate_job_id, role, user.party_id)
+
+    board_url[job_info['user_id']] = gen_url(job_info['user_id'], 'guest')
+    for user in job_info['party_id']:
+        board_url[user] = gen_url(user, 'host')
+
+    return ok_response(data={'board_url': board_url})
 
 @bp.route('/infer', methods=['POST'])
 def model_infer():
