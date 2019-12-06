@@ -45,9 +45,12 @@ def model_train():
     p.close()
     p.join()
     print(responses[9997].get().text)
-    data_volum = {
-        id_map[pid]: json.loads(responses[pid].get().text)['info']['data_volum'] for pid in id_map.keys()
-    }
+    data_volum = dict()
+    for pid in id_map.keys():
+        response = json.loads(responses[pid].get().text)
+        if response['code'] != 200:
+            return error_response(message=response)
+        data_volum[id_map[pid]] = response['info']['data_volum']
 
     # Generate config file
     with open(current_app.config['TRAIN_TEMPLATE'], 'r', encoding='utf-8') as f:
