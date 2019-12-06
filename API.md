@@ -44,15 +44,16 @@
           "need_cv": false
         }
       },
-      "party_id": [2,3],
+      "party_id": [2, 3],
       "data_info": {
-        "4": "SELECT * FROM data.breast_homo_guest;",
-        "2": "SELECT * FROM data.breast_homo_host;",
-        "3": "SELECT * FROM data.breast_homo_host;"
+        "4": "SELECT * FROM data.blooddata;",
+        "2": "SELECT * FROM data.blooddata;",
+        "3": "SELECT * FROM data.blooddata;"
       },
-      "unique_id": "id",
-      "attributes": ["x1", "x2", "x3", "x4"],
-      "label_name" : "y"
+      "unique_id": "unique_id",
+      "attributes": ["ALA", "ARG", "CIT", "GLY"],
+      "label_name" : "diagnosis",
+      "label_value" : 5
   }
   ```
 

@@ -165,18 +165,23 @@ def job_status_checker(jobid, fate_flow_path):
         return RUNNING
     check_data = stdout["data"]
     task_status = []
+    progress = 0
+    current_tasks = []
 
     for component_stats in check_data:
         status = component_stats['f_status']
         task_status.append(status)
-
+        progress = component_stats['f_progress']
+        current_tasks = component_stats['f_current_tasks']
+    status = SUCCESS
     if any([s == FAIL for s in task_status]):
-        return FAIL
+        status = FAIL
 
     if any([s == RUNNING for s in task_status]):
-        return RUNNING
+        status = RUNNING
 
-    return SUCCESS
+    job_status = {'train_status':status, 'train_progress': progress, 'current_tasks': current_tasks}
+    return job_status
 
 
 def get_model(jobid, party_id, role, cpn, fate_flow_path):
