@@ -36,10 +36,10 @@ def read_data():
     db_engine = get_db_engine()
     try:
         df = pd.read_sql(sql, con=db_engine)
-        db_data = df[attributes]
+        db_data = df[attributes].astype('float64', errors='ignore')
         label_name = attributes[-1]
         db_data[label_name].replace(label_value, 1, inplace=True)
-        db_data[label_name].loc[db_data[label_name] != 1] = 0
+        db_data.loc[db_data[label_name] != 1, label_name] = 0
     except Exception as e:
         return error_response(message="Query data from database error. Error info: " + str(e))
 
