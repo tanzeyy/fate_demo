@@ -143,3 +143,38 @@ def model_info():
     response['party_id'] = order_info.get('party_id')
     response['data_volum'] = data_volum
     return ok_response(data=response)
+
+@bp.route('/board_url', methods=['GET'])
+def board_url():
+    order_id = request.args.get('order_id')
+
+    if order_id is None:
+        return error_response("None order_id.")
+
+    db = get_db()
+    order = db.query(Order).filter(Order.id == order_id).first()
+
+    if order is None:
+        return error_response(message="Error order_id")
+
+    if order.type != 'train':
+        return error_response(message="Not a training order id")
+
+    # TODO：外网和端口
+    # nginx_conf = {'1':'', '2':'', '3': '', '4': ''}
+
+    url = "{}/#/dashboard?job_id={}&role={}&party_id={}"
+    job_info = json.loads(order.order_info)
+    fate_job_id = order.fate_job_id
+
+    board_url = dict()
+    def gen_url(user_id, role):
+        user = db.query(User).filter(User.id==user_id).first()
+        client_url = user.client_url.replace('5000', '8080')
+        return url.format(client_url, fate_job_id, role, user.party_id)
+
+    board_url[job_info['user_id']] = gen_url(job_info['user_id'], 'guest')
+    for user in job_info['party_id']:
+        board_url[user] = gen_url(user, 'host')
+
+    return ok_response(data={'board_url': board_url})
