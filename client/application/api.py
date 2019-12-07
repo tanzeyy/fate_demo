@@ -43,6 +43,7 @@ def read_data():
         db_data[label_name].replace(label_value, 1, inplace=True)
         db_data.loc[db_data[label_name] != 1, label_name] = 0
     except Exception as e:
+        print(str(e))
         return error_response(message="Query data from database error. Error info: " + str(e))
 
     # if (len(db_data) == 0):

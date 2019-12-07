@@ -45,16 +45,19 @@ def train_status():
     if order is None:
         return error_response(message="Error order_id")
 
+    job_info = json.loads(order.job_info)
+    data_volum = job_info['algorithm_parameters']['homo_lr_0']['data_volum']
+
     model_id = order.model_id
     fate_job_id = order.fate_job_id
-    job_info = json.loads(order.order_info)
-    user_id = job_info['user_id']
+    order_info = json.loads(order.order_info)
+    user_id = order_info['user_id']
     user = db.query(User).filter(User.id == user_id).first()
     url = user.client_url + "/api/status"
     response = check_job_status(url, fate_job_id)
 
     status_info = json.loads(response.text)
-    return ok_response(message=status_info['message'], data={'model_id': model_id, 'train_status':status_info['data']})
+    return ok_response(message=status_info['message'], data={'model_id': model_id, 'train_status':status_info['data'], "data_volum": data_volum})
 
 
 @bp.route('/infer', methods=['POST'])
