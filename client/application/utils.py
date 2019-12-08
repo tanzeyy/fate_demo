@@ -173,7 +173,7 @@ def job_status_checker(jobid, fate_flow_path):
         task_status.append(status)
         progress = component_stats['f_progress']
         current_tasks = component_stats['f_current_tasks']
-    status = SUCCESS
+
     if any([s == FAIL for s in task_status]):
         status = FAIL
 

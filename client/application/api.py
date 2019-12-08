@@ -6,6 +6,7 @@ import csv
 import json
 import os
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -42,6 +43,7 @@ def read_data():
         label_name = attributes[-1]
         db_data[label_name].replace(label_value, 1, inplace=True)
         db_data.loc[db_data[label_name] != 1, label_name] = 0
+        db_data[attributes[1:-1]] = MinMaxScaler().fit_transform(db_data[attributes[1:-1]])
     except Exception as e:
         print(str(e))
         return error_response(message="Query data from database error. Error info: " + str(e))
