@@ -68,7 +68,7 @@ def train_task(data, train_conf_template, dsl_template, order_id, model_id):
 
     conf_dict['role']['guest'] = [initiator.party_id]
     conf_dict['role']['host'] = [host.party_id for host in hosts]
-    conf_dict['role']['arbiter'] = [10000]
+    conf_dict['role']['arbiter'] = [initiator.party_id]
 
     # DO NOT CHANGE
     conf_dict['role_parameters']['guest']['args']['data']['train_data'] = [{'namespace': json.loads(responses[pid].get().text)['data']['data']['namespace'], 'name': json.loads(responses[pid].get().text)['data']['data']['table_name']} for pid in conf_dict['role']['guest']]
