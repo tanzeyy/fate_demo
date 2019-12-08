@@ -88,12 +88,19 @@
 - 请求成功返回：
 
   ```json
-  {
+{
       "code": 200,
       "data": {
-          "model_id": 37,
-          "train_status": "running"
-      },
+          "data_volum": {
+              "2": 165
+          },
+          "model_id": 113,
+          "train_status": {
+              "current_tasks": "[\"2019120713481960019714_homo_lr_0\"]",
+              "train_progress": 33,
+              "train_status": "failed"
+          }
+    },
       "message": null
   }
   ```
@@ -226,7 +233,19 @@
 
 - 请求方式：`GET`
 
-- 请求参数：`order_id=58`
+- 请求参数：`order_id=131`
 
 - 请求成功返回：
-
+  ```json
+{
+    "code": 200,
+    "data": {
+        "board_url": {
+            "2": "http://192.168.25.106:8080/#/dashboard?job_id=201912071333357488842&role=guest&party_id=9999",
+            "3": "http://192.168.25.107:8080/#/dashboard?job_id=201912071333357488842&role=host&party_id=9998",
+            "4": "http://192.168.25.108:8080/#/dashboard?job_id=201912071333357488842&role=host&party_id=9997"
+        }
+    },
+    "message": null
+}
+  ```

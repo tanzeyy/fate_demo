@@ -6,7 +6,7 @@ import requests
 from . import celery
 from .libs.db import get_db
 from .libs.models import Model, Order, User
-from .libs.utils import submit_data, submit_train_task
+from .libs.utils import submit_data, submit_train_task, error_response
 
 
 @celery.task
