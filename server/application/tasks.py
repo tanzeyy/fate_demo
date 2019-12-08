@@ -96,15 +96,16 @@ def train_task(data, train_conf_template, dsl_template, order_id, model_id):
 
     model_info = json.loads(response.text)['data']['data']['model_info']
 
-    model = db.query(Model).filter(Model.id==model_id).first()
-    model.fate_id = model_info['model_id']
-    model.fate_version = model_info['model_version']
-    model.info = json.dumps(model_param)
 
     model_param['attributes'] = original_attr
     model_param['unique_id'] = unique_id
     model_param['label_name'] = label_name
     model_param['data_volum'] = data_volum
+
+    model = db.query(Model).filter(Model.id==model_id).first()
+    model.fate_id = model_info['model_id']
+    model.fate_version = model_info['model_version']
+    model.info = json.dumps(model_param)
 
     order = db.query(Order).filter(Order.id==order_id).first()
     order.fate_job_id = model.fate_version
@@ -116,4 +117,4 @@ def train_task(data, train_conf_template, dsl_template, order_id, model_id):
     db.add(model)
     db.add(order)
     db.commit()
-    return model_info
+    return model.info, model_param
