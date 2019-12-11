@@ -44,6 +44,9 @@ def train_status():
 
     if order is None:
         return error_response(message="Error order_id")
+    
+    if order.job_info is None:
+        return ok_response(message='Reading data')
 
     job_info = json.loads(order.job_info)
     data_volum = job_info['algorithm_parameters']['homo_lr_0']['data_volum']

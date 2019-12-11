@@ -6,7 +6,7 @@ import csv
 import json
 import os
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import RobustScaler
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -36,14 +36,14 @@ def read_data():
 
     db_engine = get_db_engine()
     try:
-        df = pd.read_sql(sql, con=db_engine)
+        df = pd.read_sql(sql, con=db_engine).fillna(0)
         attribute_data = df[attributes[1:-1]].astype('float64')
         label_data = df[attributes[-1]].astype('int')
         db_data = pd.concat([df[attributes[0]], attribute_data, label_data], axis=1)
         label_name = attributes[-1]
         db_data[label_name].replace(label_value, 1, inplace=True)
         db_data.loc[db_data[label_name] != 1, label_name] = 0
-        db_data[attributes[1:-1]] = MinMaxScaler().fit_transform(db_data[attributes[1:-1]])
+        db_data[attributes[1:-1]] = RobustScaler().fit_transform(db_data[attributes[1:-1]])
     except Exception as e:
         print(str(e))
         return error_response(message="Query data from database error. Error info: " + str(e))
