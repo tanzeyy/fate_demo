@@ -155,9 +155,12 @@ def infer_with_model():
         return error_response(message="没有满足条件的数据")
 
     # Predict
-    results = homo_lr_predict(db_data.astype('float64'), model_params).to_frame(name='label')
-    results[unique_id] = df[unique_id]
-    outputs = results.to_dict("records")
+    try:
+        results = homo_lr_predict(db_data.astype('float64'), model_params).to_frame(name='label')
+        results[unique_id] = df[unique_id]
+        outputs = results.to_dict("records")
+    except:
+        return error_response(message="Infer task failed, please check your input data or the model.")
 
     return ok_response(data=outputs)
     

@@ -2,15 +2,15 @@ import json
 
 from flask import Blueprint, current_app, jsonify, make_response, request
 
-from .tasks import infer_task, train_task
-
 from .libs.db import get_db
 from .libs.models import Model, Order, User
 from .libs.utils import (check_job_status, error_response, ok_response,
                          query_model_params, submit_data, submit_infer_task,
                          submit_train_task)
+from .tasks import infer_task, train_task
 
 bp = Blueprint('model', __name__, url_prefix='/model')
+
 
 @bp.route('/train', methods=['POST', ])
 def model_train():
@@ -27,7 +27,8 @@ def model_train():
     db.commit()
     train_conf_template = current_app.config['TRAIN_TEMPLATE']
     dsl_template = current_app.config['LR_DSL_TEMPLATE']
-    train_task.delay(data, train_conf_template, dsl_template, order.id, model.id)
+    train_task.delay(data, train_conf_template,
+                     dsl_template, order.id, model.id)
 
     return ok_response(data={"model_id": model.id, "order_id": order.id})
 
@@ -43,10 +44,16 @@ def train_status():
     order = db.query(Order).filter(Order.id == order_id).first()
 
     if order is None:
-        return error_response(message="Error order_id")
-    
+        return error_response(message="Error order_id.")
+
+    if order.type != 'train':
+        return error_response(message="Not a training order.")
+
     if order.job_info is None:
-        return ok_response(message='Reading data')
+        return error_response(message='Job submit failed.')
+
+    if order.fate_job_id is None:
+        return ok_response(data=json.loads(order.job_info))
 
     job_info = json.loads(order.job_info)
     data_volum = job_info['algorithm_parameters']['homo_lr_0']['data_volum']
@@ -60,7 +67,7 @@ def train_status():
     response = check_job_status(url, fate_job_id)
 
     status_info = json.loads(response.text)
-    return ok_response(message=status_info['message'], data={'model_id': model_id, 'train_status':status_info['data'], "data_volum": data_volum})
+    return ok_response(message=status_info['message'], data={'model_id': model_id, 'train_status': status_info['data'], "data_volum": data_volum})
 
 
 @bp.route('/infer', methods=['POST'])
@@ -88,14 +95,15 @@ def model_infer():
     model_info = json.loads(model.info)
     unique_id = model_info['unique_id']
     attributes = model_info['attributes']
-    
-    predict_user = db.query(User).filter(User.id==user_id).first()
+
+    predict_user = db.query(User).filter(User.id == user_id).first()
     url = predict_user.client_url + '/api/infer'
     job_info = {'infer_status': 'runnning', 'result': ''}
     order = Order(type="infer", order_info=data, job_info=json.dumps(job_info))
     db.add(order)
     db.commit()
-    infer_task.delay(url, data_sql, model_weights, attributes, unique_id, order.id)
+    infer_task.delay(url, data_sql, model_weights,
+                     attributes, unique_id, order.id)
     return ok_response(data={'order_id': order.id})
 
 
@@ -106,7 +114,7 @@ def infer_status():
         return error_response("None order_id.")
 
     db = get_db()
-    order = db.query(Order).filter(Order.id==order_id).first()
+    order = db.query(Order).filter(Order.id == order_id).first()
     if order is None:
         return error_response("No order found! Please check your order_id.")
 
@@ -147,6 +155,7 @@ def model_info():
     response['data_volum'] = data_volum
     return ok_response(data=response)
 
+
 @bp.route('/board_url', methods=['GET'])
 def board_url():
     order_id = request.args.get('order_id')
@@ -162,6 +171,9 @@ def board_url():
 
     if order.type != 'train':
         return error_response(message="Not a training order id")
+    
+    if order.fate_job_id is None:
+        return error_response(message="No job id found, please check order status.")
 
     # TODO：外网和端口
     # nginx_conf = {'1':'', '2':'', '3': '', '4': ''}
@@ -171,8 +183,9 @@ def board_url():
     fate_job_id = order.fate_job_id
 
     board_url = dict()
+
     def gen_url(user_id, role):
-        user = db.query(User).filter(User.id==user_id).first()
+        user = db.query(User).filter(User.id == user_id).first()
         client_url = user.client_url.replace('5000', '8080')
         return url.format(client_url, fate_job_id, role, user.party_id)
 
