@@ -25,6 +25,7 @@ def infer_task(url, data_sql, model_params, attributes, unique_id, order_id):
     if response.status_code != 200:
         job_info['infer_status'] = 'failed'
         job_info['debug_info'] = json.dumps(response.text)
+        job_info['result'] = None
 
     else:
         import numpy as np

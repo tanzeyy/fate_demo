@@ -22,12 +22,12 @@ def read_data():
         return error_response(message="None data.")
     data = request.get_json()
 
-    sql = data.get('data_sql')
+    data_sql = data.get('data_sql')
     attributes = data.get('attributes')
     label_value = data.get('label_value')
 
     # 没有sql语句
-    if not sql:
+    if not data_sql:
         return error_response(message="None data_sql in request.")
 
     # 没有attributes
@@ -36,7 +36,10 @@ def read_data():
 
     db_engine = get_db_engine()
     try:
-        df = pd.read_sql(sql, con=db_engine).fillna(0)
+        df_list = []
+        for sql in data_sql.values():
+            df_list.append(pd.read_sql(sql, con=db_engine).fillna(0))
+        df = pd.concat(df_list)
         attribute_data = df[attributes[1:-1]].astype('float64')
         label_data = df[attributes[-1]].astype('int')
         db_data = pd.concat([df[attributes[0]], attribute_data, label_data], axis=1)
