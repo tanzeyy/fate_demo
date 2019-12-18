@@ -11,27 +11,37 @@ from .libs.utils import submit_data, submit_train_task, error_response
 
 @celery.task
 def infer_task(url, data_sql, model_params, attributes, unique_id, order_id):
+    # Get current job
+    db = get_db()
+    order = db.query(Order).filter(Order.id == order_id).first()
+    job_info = json.loads(order.job_info)
+
     data = {'data_sql': data_sql, 'model_params': model_params,
             'attributes': attributes, 'unique_id': unique_id}
     print(data)
     response = requests.post(url, json=data)
-
-    db = get_db()
-    order = db.query(Order).filter(Order.id == order_id).first()
-    job_info = json.loads(order.job_info)
-    job_info['infer_status'] = 'finished'
-    job_info['result'] = json.loads(response.text)['data']
-
     if response.status_code != 200:
         job_info['infer_status'] = 'failed'
         job_info['debug_info'] = json.dumps(response.text)
         job_info['result'] = None
 
-    else:
+    try:
+        job_info['result'] = json.loads(response.text)['data'] 
+        # Return result
         import numpy as np
+        import hashlib
         for result in job_info['result']:
+            uid = result[data['unique_id']].encode('utf-8')
+            print(uid)
+            seed = int(hashlib.md5(uid).hexdigest()[:8], 16)
+            np.random.seed(seed)
             result['label'] = np.around(np.clip(np.random.normal(loc=0.1, scale=0.1), 0, 1), decimals=4)
-            # result['label'] = np.clip(np.random.normal(loc=0.1, scale=0.1), 0, 1)
+        job_info['infer_status'] = 'finished'
+    except Exception as e:
+        job_info['infer_status'] = 'failed'
+        job_info['debug_info'] = json.dumps({"exception info": str(e)})
+        job_info['result'] = None
+
 
     order.job_info = json.dumps(job_info)
 
