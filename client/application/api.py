@@ -22,12 +22,12 @@ def read_data():
         return error_response(message="None data.")
     data = request.get_json()
 
-    sql = data.get('data_sql')
+    data_sql = data.get('data_sql')
     attributes = data.get('attributes')
     label_value = data.get('label_value')
 
     # 没有sql语句
-    if not sql:
+    if not data_sql:
         return error_response(message="None data_sql in request.")
 
     # 没有attributes
@@ -36,7 +36,10 @@ def read_data():
 
     db_engine = get_db_engine()
     try:
-        df = pd.read_sql(sql, con=db_engine).fillna(0)
+        df_list = []
+        for sql in data_sql.values():
+            df_list.append(pd.read_sql(sql, con=db_engine).fillna(0))
+        df = pd.concat(df_list)
         attribute_data = df[attributes[1:-1]].astype('float64')
         label_data = df[attributes[-1]].astype('int')
         db_data = pd.concat([df[attributes[0]], attribute_data, label_data], axis=1)
@@ -147,6 +150,7 @@ def infer_with_model():
     db_engine = get_db_engine()
     try:
         df = pd.read_sql(data_sql, con=db_engine, coerce_float=True)
+        df[attributes] = RobustScaler().fit_transform(df[attributes].astype('float64'))
         db_data = df[attributes]
     except Exception as e:
         return error_response(message="Query data from database error. Error info: " + str(e))
@@ -156,11 +160,11 @@ def infer_with_model():
 
     # Predict
     try:
-        results = homo_lr_predict(db_data.astype('float64'), model_params).to_frame(name='label')
+        results = homo_lr_predict(db_data, model_params).to_frame(name='label')
         results[unique_id] = df[unique_id]
         outputs = results.to_dict("records")
-    except:
-        return error_response(message="Infer task failed, please check your input data or the model.")
+    except Exception as e:
+        return error_response(message="Infer task failed, please check your input data or the model. Error info: " + str(e))
 
     return ok_response(data=outputs)
     
