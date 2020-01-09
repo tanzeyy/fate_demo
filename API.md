@@ -21,39 +21,48 @@
 
   ```json
   {
-      "user_id": 4, 
-      "model_type": "lr",
-      "model_params": {
-        "penalty": "L2",
-        "optimizer": "sgd",
-        "eps": 1e-4,
-        "alpha": 0.01,
-        "max_iter": 10,
-        "converge_func": "diff",
-        "batch_size": 500,
-        "learning_rate": 0.15,
-        "decay": 1,
-        "decay_sqrt": true,
-        "init_param": {
-          "init_method": "zeros"
-        },
-        "encrypt_param": {
-          "method": "Paillier"
-        },
-        "cv_param": {
-          "need_cv": false
-        }
-      },
-      "party_id": [2, 3],
-      "data_info": {
-        "4": "SELECT * FROM data.blooddata;",
-        "2": "SELECT * FROM data.blooddata;",
-        "3": "SELECT * FROM data.blooddata;"
-      },
-      "unique_id": "unique_id",
-      "attributes": ["ALA", "ARG", "CIT", "GLY"],
-      "label_name" : "diagnosis",
-      "label_value" : 5
+   "user_id": 3,
+   "model_type": "lr",
+   "model_params": {
+    "penalty": "L2",
+    "optimizer": "sgd",
+    "eps": 1e-4,
+    "alpha": 0.01,
+    "max_iter": 5,
+    "converge_func": "diff",
+    "batch_size": 500,
+    "learning_rate": 0.15,
+    "decay": 1,
+    "decay_sqrt": true,
+    "init_param": {
+     "init_method": "zeros"
+    },
+    "encrypt_param": {
+     "method": "Paillier"
+    },
+    "cv_param": {
+     "need_cv": false
+    }
+   },
+   "party_id": [4, 2],
+   "data_info": {
+    "2": {
+     "pos": "select * from data.blooddata_small;",
+     "neg": "select * from data.blooddata_small;"
+    },
+    "3": {
+     "pos": "select * from data.blooddata_small;",
+     "neg": "select * from data.blooddata_small;"
+    },
+    "4": {
+     "pos": "select * from data.blooddata_small;",
+     "neg": "select * from data.blooddata_small;"
+    }
+   },
+   "unique_id": "unique_id",
+   "attributes": ["C6", "C6DC", "C8"],
+   "label_name": "diagnosis",
+   "label_value": 38
   }
   ```
 
@@ -63,13 +72,8 @@
   {
       "code": 200,
       "data": {
-          "data_volum": {
-              "2": 228,
-              "3": 228,
-              "4": 227
-          },
-          "model_id": 37,
-        "order_id": 37
+          "model_id": 137,
+          "order_id": 169
       },
       "message": null
   }
@@ -83,7 +87,7 @@
 
 - 请求方式：`GET`
 
-- 请求参数：`order_id=37`
+- 请求参数：`order_id=169`
 
 - 请求成功返回：
 
@@ -92,15 +96,17 @@
       "code": 200,
       "data": {
           "data_volum": {
-              "2": 165
+              "2": 592,
+              "3": 702,
+              "4": 554
           },
-          "model_id": 113,
+          "model_id": 137,
           "train_status": {
-              "current_tasks": "[\"2019120713481960019714_homo_lr_0\"]",
+              "current_tasks": "[\"2019121614323335921220_dataio_0\"]",
               "train_progress": 33,
-              "train_status": "failed"
+              "train_status": "running"
           }
-    },
+      },
       "message": null
   }
   ```
@@ -114,7 +120,7 @@
 
 - 请求方式：`GET`
 
-- 请求参数：`model_id=38`
+- 请求参数：`model_id=137`
 
 - 请求成功返回：
 
@@ -123,17 +129,16 @@
       "code": 200,
       "data": {
           "data_volum": {
-              "2": 228,
-              "3": 228,
-              "4": 227
+              "2": 592,
+              "3": 702,
+              "4": 554
           },
           "model_params": {
               "alpha": 0.01,
               "attributes": [
-                  "x1",
-                  "x2",
-                  "x3",
-                  "x4"
+                  "C6",
+                  "C6DC",
+                  "C8"
               ],
               "batch_size": 500,
               "converge_func": "diff",
@@ -149,19 +154,19 @@
               "init_param": {
                   "init_method": "zeros"
               },
-              "label_name": "y",
+              "label_name": "diagnosis",
               "learning_rate": 0.15,
-              "max_iter": 30,
+              "max_iter": 5,
               "optimizer": "sgd",
               "penalty": "L2",
-              "unique_id": "id"
+              "unique_id": "unique_id"
           },
           "model_type": "Logistic Regression",
           "party_id": [
-              2,
-              3
+              4,
+              2
           ],
-          "user_id": 4
+          "user_id": 3
       },
       "message": null
   }
@@ -179,10 +184,10 @@
 
   ```json
   {
-  	"model_id": "32",
+  	"model_id": "137",
   	"input_data": {
   		"user_id": "4",
-  		"data_sql": "SELECT * FROM data.breast_homo_guest where id=0;"
+  		"data_sql": "SELECT * FROM select * from data.blooddata_small;"
   	}
   }
   ```
@@ -193,7 +198,7 @@
   {
       "code": 200,
       "data": {
-          "order_id": 58
+          "order_id": 176
       },
       "message": null
   }
@@ -207,7 +212,7 @@
 
 - 请求方式：`GET`
 
-- 请求参数：`order_id=58`
+- 请求参数：`order_id=170`
 
 - 请求成功返回：
 
@@ -218,8 +223,8 @@
           "infer_status": "finished",
           "result": [
               {
-                  "id": "0",
-                  "label": 0.5067305295607227
+                  "label": 0.0768,
+                  "unique_id": "1"
               }
           ]
       },
@@ -233,19 +238,19 @@
 
 - 请求方式：`GET`
 
-- 请求参数：`order_id=131`
+- 请求参数：`order_id=169`
 
 - 请求成功返回：
   ```json
 {
-    "code": 200,
-    "data": {
-        "board_url": {
-            "2": "http://192.168.25.106:8080/#/dashboard?job_id=201912071333357488842&role=guest&party_id=9999",
-            "3": "http://192.168.25.107:8080/#/dashboard?job_id=201912071333357488842&role=host&party_id=9998",
-            "4": "http://192.168.25.108:8080/#/dashboard?job_id=201912071333357488842&role=host&party_id=9997"
-        }
-    },
-    "message": null
+      "code": 200,
+      "data": {
+          "board_url": {
+              "2": "http://192.168.25.106:8080/#/dashboard?job_id=2019121614323335921220&role=host&party_id=9999",
+              "3": "http://192.168.25.107:8080/#/dashboard?job_id=2019121614323335921220&role=guest&party_id=9998",
+              "4": "http://192.168.25.108:8080/#/dashboard?job_id=2019121614323335921220&role=host&party_id=9997"
+          }
+      },
+      "message": null
 }
   ```
